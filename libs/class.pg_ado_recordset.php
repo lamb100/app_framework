@@ -1,6 +1,4 @@
 <?php
-require_once( "class.pg_ado_connector.php" );
-
 /**
  * Recordset Cache運行規則
  * 根資料

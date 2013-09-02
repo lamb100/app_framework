@@ -1,6 +1,4 @@
 <?php
-require_once( "class.pg_ado_recordset.php" );
-
 define( "intBPACSelectPageMode" , 1 );
 define( "intBPACSelectOffsetMode" , 0 );
 
