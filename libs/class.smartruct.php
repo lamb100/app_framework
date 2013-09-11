@@ -18,25 +18,25 @@ require_once( "function.php" );
  * </t:switch>
  *
  * <t:for name="名稱" start="開始值" end="結束值" step="間隔值">
- * <t:break time="跳脫次數"/>
- * <t:continue time="循環次數"/>
+ * <t:break time="跳脫層數"/>
+ * <t:continue time="循環層數"/>
  * </t:for>
  *
  * <t:foreach name="名稱" from="要循環取值的陣列" key="鍵值代表陣列" item="鍵值內容值">
- * <t:break time="跳脫次數"/>
- * <t:continue time="循環次數"/>
+ * <t:break time="跳脫層數"/>
+ * <t:continue time="循環層數"/>
  * <t:foreachelse>
  * </t:foreachelse>
  * </t:foreach>
  *
  * <t:while name="名稱" test="條件">
- * <t:break time="跳脫次數"/>
- * <t:continue time="循環次數"/>
+ * <t:break time="跳脫層數"/>
+ * <t:continue time="循環層數"/>
  * </t:while>
  *
  * <t:do name="名稱" test="條件">
- * <t:break time="跳脫次數"/>
- * <t:continue time="循環次數"/>
+ * <t:break time="跳脫層數"/>
+ * <t:continue time="循環層數"/>
  * </t:do>
  *
  * <t:include file="引入樣版的檔案位置" 參數名稱="參數內容"/>
@@ -222,8 +222,8 @@ class	Smartruct
 	/**
 	 * 指派樣版內的變數
 	 * @param	mixed	$mixNameOrVars	<ul>
-	 * <li>當不指派第二個變數時，為一個陣列，裡頭為樣版變數名稱，和所賦予值的對應陣列</li>
-	 * <li>當指派第二個變數時，為一字串，為樣版變數的名稱</li></ul>
+	 * <li>當不指派第二個變數時，該變數為一個陣列，裡頭為樣版變數名稱，和所賦予值的對應陣列</li>
+	 * <li>當指派第二個變數時，該變數為一字串，為樣版變數的名稱</li></ul>
 	 * @param string	$strValues	賦予$mixNameOrVars所指定的樣版變數名稱的值
 	 * @return	void
 	 */

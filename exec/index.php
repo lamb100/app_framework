@@ -44,5 +44,5 @@ if( file_exists( "{$_APPF["DIR_LIBS"]}/{$strType}/class.{$strModule}_{$strType}.
 $strClass = "{$strModuleClassBase}" . ucfirst( strtolower( $strFunction ) );
 $objProcess = new $strClass();
 $strMethod = ucfirst( $strAdmin ) . ucfirst( $strAction );
-$objProcess->{$strMethod}();
+$objProcess->Execute( $strMethod );
 ?>
