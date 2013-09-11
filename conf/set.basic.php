@@ -3,6 +3,7 @@ if( ! isset( $_APPF ) )
 {
 	$_APPF = array();
 }
+//The default setting
 /*Basic*/
 $_APPF["DIR_CONF"] = dirname( __FILE__ );
 $_APPF["DIR_ROOT"] = dirname( $_APPF["DIR_CONF"] );
@@ -22,3 +23,11 @@ $_APPF["DIR_TPL"] = realpath( "{$_APPF["DIR_ROOT"]}/template" );
 $_APPF["DIR_CTPL"] = realpath( "{$_APPF["DIR_TPL"]}/.compiled" );
 $_APPF["LANG"] = 'zh_TW';
 /*DB*/
+
+if( isset( $_SERVER["HTTP_HOST"] ) )
+{
+	if( file_exists( "set.{$_SERVER["HTTP_HOST"]}.php" ) )
+	{
+		include( "set.{$_SERVER["HTTP_HOST"]}.php" );
+	}
+}
