@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<clay-model clay-version="2.0.1">
+<database-model author="" begin-script="" end-script="" id="3b69ccba:14110f43c8c:-8000" name="appf" sql-dialect-id="jp.azzurri.clay.dialect.Postgre_7_3_Dialect" version="1.0">
+<schema-list>
+<schema alias="Apache PostgreSQL PHP Framework" id="3b69ccba:14110f43c8c:-7ffd" name="APPF" remarks="系統資料">
+<table-list>
+<table alias="tb_user_basic" id="3b69ccba:14110f43c8c:-7ffa" name="tb_user_basic" remarks="用戶基本資料">
+<column-list>
+<column alias="chr_usb_sha1" auto-increment="false" column-size="40" decimal-digits="0" default-value="" id="3b69ccba:14110f43c8c:-7ff4" mandatory="true" name="chr_usb_sha1" remarks="使用者資料">
+<data-type name="CHAR" selected-variant-pattern="CHAR(%n)"/>
+</column>
+<column alias="vch_usb_id" auto-increment="false" column-size="127" decimal-digits="0" default-value="" id="3b69ccba:14110f43c8c:-7ff1" mandatory="false" name="vch_usb_id" remarks="User ID">
+<data-type name="VARCHAR" selected-variant-pattern="VARCHAR(%n)"/>
+</column>
+<column alias="chr_usb_pass" auto-increment="false" column-size="56" decimal-digits="0" default-value="" id="3b69ccba:14110f43c8c:-7fea" mandatory="false" name="chr_usb_pass">
+<data-type name="CHAR" selected-variant-pattern="CHAR(%n)"/>
+</column>
+<column alias="tsp_usb_first" auto-increment="false" column-size="0" decimal-digits="0" default-value="" id="3b69ccba:14110f43c8c:-7fe7" mandatory="false" name="tsp_usb_first" remarks="第一次登錄時間">
+<data-type name="TIMESTAMP" selected-variant-pattern="TIMESTAMP"/>
+</column>
+<column alias="tsp_usb_last" auto-increment="false" column-size="0" decimal-digits="0" default-value="" id="3b69ccba:14110f43c8c:-7fe6" mandatory="false" name="tsp_usb_last" remarks="前次更新時間">
+<data-type name="TIMESTAMP" selected-variant-pattern="TIMESTAMP"/>
+</column>
+</column-list>
+<primary-key id="3b69ccba:14110f43c8c:-7ff9" name="PK_TB_USER_BASIC">
+<primary-key-column name="chr_usb_sha1"/>
+</primary-key>
+</table>
+<table alias="tb_change_log" id="3b69ccba:14110f43c8c:-7fe5" name="tb_change_log" remarks="異動記錄">
+<column-list>
+<column alias="chr_chl_sha1" auto-increment="false" column-size="40" decimal-digits="0" default-value="" id="3b69ccba:14110f43c8c:-7fdf" mandatory="true" name="chr_chl_sha1" remarks="異動記錄識別號">
+<data-type name="CHAR" selected-variant-pattern="CHAR(%n)"/>
+</column>
+<column alias="tsp_chl_time" auto-increment="false" column-size="0" decimal-digits="0" default-value="" id="3b69ccba:14110f43c8c:-7fde" mandatory="false" name="tsp_chl_time" remarks="記錄留下時間">
+<data-type name="TIMESTAMP" selected-variant-pattern="TIMESTAMP"/>
+</column>
+<column alias="vch_chl_table" auto-increment="false" column-size="255" decimal-digits="0" default-value="" id="3b69ccba:14110f43c8c:-7fd9" mandatory="false" name="vch_chl_table" remarks="異動的TABLE">
+<data-type name="VARCHAR" selected-variant-pattern="VARCHAR(%n)"/>
+</column>
+<column alias="vch_chl_class" auto-increment="false" column-size="255" decimal-digits="0" default-value="" id="15592091:14116327abe:-7ff8" mandatory="false" name="vch_chl_class" remarks="觸發異動CLASS">
+<data-type name="VARCHAR" selected-variant-pattern="VARCHAR(%n)"/>
+</column>
+<column alias="vch_chl_method" auto-increment="false" column-size="255" decimal-digits="0" default-value="" id="15592091:14116327abe:-7ff7" mandatory="false" name="vch_chl_method" remarks="異動的方法">
+<data-type name="VARCHAR" selected-variant-pattern="VARCHAR(%n)"/>
+</column>
+<column alias="txt_chl_sql" auto-increment="false" column-size="0" decimal-digits="0" default-value="" id="15592091:14116327abe:-7ff6" mandatory="false" name="txt_chl_sql" remarks="SQL">
+<data-type name="TEXT" selected-variant-pattern="TEXT"/>
+</column>
+<column alias="txt_chl_origin_match" auto-increment="false" column-size="0" decimal-digits="0" default-value="" id="15592091:14116327abe:-7ffc" mandatory="false" name="txt_chl_origin_match" remarks="異動前的符合資料內容">
+<data-type name="TEXT" selected-variant-pattern="TEXT"/>
+</column>
+<column alias="txt_chl_modified" auto-increment="false" column-size="0" decimal-digits="0" default-value="" id="15592091:14116327abe:-7ffb" mandatory="false" name="txt_chl_modified" remarks="異動後的資料">
+<data-type name="TEXT" selected-variant-pattern="TEXT"/>
+</column>
+</column-list>
+<primary-key id="3b69ccba:14110f43c8c:-7fe4" name="PK_TB_CHANGE_LOG">
+<primary-key-column name="chr_chl_sha1"/>
+</primary-key>
+</table>
+</table-list>
+</schema>
+</schema-list>
+</database-model>
+<diagram>
+<table-figure refid="3b69ccba:14110f43c8c:-7ffa" x="38" y="31"/>
+<table-figure refid="3b69ccba:14110f43c8c:-7fe5" x="325" y="52"/>
+</diagram>
+</clay-model>

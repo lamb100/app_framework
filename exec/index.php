@@ -4,6 +4,7 @@ include( "{$_APPF["DIR_LIBS"]}/class.pg_ado_connector.php" );
 include( "{$_APPF["DIR_LIBS"]}/class.pg_ado_recordset.php" );
 include( "{$_APPF["DIR_LIBS"]}/class.smartruct.php" );
 include( "{$_APPF["DIR_LIBS"]}/function.php" );
+include( "{$_APPF["DIR_LIBS"]}/class.core.php" );
 
 #a:admin or not/m:module/f:function/x:action/p:params
 #RewriteRule	^\/(admin\/)?([a-z][_0-9a-z]+)\/(.+)\/([a-z][_0-9a-z]+)\.(view|do|ajax|jsp|csp)$	/index.php?a=$1&m=$2&f=$4&x=$5&p=$3	[L,NC,PT,QSA]
