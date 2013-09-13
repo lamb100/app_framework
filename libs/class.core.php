@@ -25,6 +25,7 @@ abstract	class	Core	extends	stdClass
 		"mem"	=>	array() ,
 		"flag"	=>	false ,
 	);
+	protected	$ChangeLog = array();
 	protected	$ParamsDefine = array();
 	protected	$Request = array();
 	protected	$Session = array();
@@ -248,5 +249,14 @@ abstract	class	Core	extends	stdClass
 			$this->Request[$strDefine] = $aryParams[$intK];
 		}
 		return	$this;
+	}
+
+	protected	function	KeepChangeLog( $strSQL , $strClass , $strMethod )
+	{
+		$strTime = microtime();
+		$this->ChangeLog[$strTime]['txt_chl_sql'] = "'" . $strSQL . "'";
+		$this->ChangeLog[$strTime]['vch_chl_class'] = "'" . $strClass . "'";
+		$this->ChangeLog[$strTime]['vch_chl_method'] = "'" . $strMethod . "'";
+		//解析SQL
 	}
 }
