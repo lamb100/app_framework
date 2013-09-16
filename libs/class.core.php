@@ -25,10 +25,10 @@ abstract	class	Core	extends	stdClass
 		"mem"	=>	array() ,
 		"flag"	=>	false ,
 	);
-	protected	$ChangeLog = array();
 	protected	$ParamsDefine = array();
 	protected	$Request = array();
 	protected	$Session = array();
+	protected	$Process = array();
 
 
 	/*Magic Methods*/
@@ -89,6 +89,12 @@ abstract	class	Core	extends	stdClass
 	 */
 	public	function	Execute()
 	{
+		$strClass = get_class( $this );
+		if( preg_match( '/module$/i' , $strClass ) )
+		{
+			$this->SetMsgTrace(  $this->GetLang( "NO_USE_FOR_MODULE" ) , __FILE__ , __LINE__ );
+			return	false;
+		}
 		$aryParams = func_get_args();
 		$strMethod = $aryParams[0];
 		unset( $aryParams[0] );

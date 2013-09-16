@@ -29,6 +29,11 @@ $_APPF["DIR_TPL"] = realpath( "{$_APPF["DIR_ROOT"]}/template" );
 $_APPF["DIR_CTPL"] = realpath( "{$_APPF["DIR_TPL"]}/.compiled" );
 $_APPF["LANG"] = 'zh_TW';
 /*DB*/
+$_APPF["DB_HOST"] = "localhost";
+$_APPF["DB_USER"] = "appf";
+$_APPF["DB_PASS"] = "appf@postgresql";
+$_APPF["DB_NAME"] = "appf";
+$_APPF["DB_PORT"] = 54321;
 
 /*If there are other setting for this website, you can set as above in the file named by the host name.*/
 if( isset( $_SERVER["HTTP_HOST"] ) )
