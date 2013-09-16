@@ -38,25 +38,40 @@ class	PGADOConnector
 	 * @var	boolean
 	 */
 	protected	$bolPersistent = false;
+	/**
+	 * 是否記錄資料修改記錄
+	 * @var boolean
+	 */
+	protected	$bolSaveChangeLog = false;
+	/**
+	 * 儲存所記錄的儲存點(Save Point)
+	 * @var	array
+	 */
 	protected	$aryTransSavePoints = array();
+	/**
+	 * 預存的一些系統相關的SQL指令
+	 * @var	array
+	 */
 	protected	$aryPredefineSQL = array(
+		//取得系統內的所有資料庫
 		"DB"	=>	"SELECT datname AS \"name\" FROM pg_database WHERE datname not IN ('template0','template1') ORDER BY datname" ,
-
+		//取得資料庫內所有的資料表
 		"TABLE"	=>	"SELECT tablename AS \"name\",'T' AS \"type\" FROM pg_tables WHERE tablename NOT LIKE 'pg\_%'
 	AND tablename NOT IN ('sql_features', 'sql_implementation_info', 'sql_languages',
 	 'sql_packages', 'sql_sizing', 'sql_sizing_profiles')
 	UNION
         SELECT viewname AS \"name\",'V' AS \"type\" FROM pg_views WHERE viewname NOT LIKE 'pg\_%'" ,
-
+		//取得某一個資料表內所有的欄位
 		"FIELD"	=>	"SELECT a.attname AS \"name\", t.typname AS \"type\", a.attlen AS int_len, a.atttypmod, a.attnotnull, a.atthasdef, a.attnum
 FROM pg_class c, pg_attribute a, pg_type t, pg_namespace n
 WHERE relkind in ('r','v') AND (c.relname='{TABLE}' or c.relname = lower('{TABLE}'))
  AND c.relnamespace=n.oid and n.nspname='{DB}'
 	AND a.attname not like '....%%' AND a.attnum > 0
 	AND a.atttypid = t.oid AND a.attrelid = c.oid ORDER BY a.attnum" ,
-
+		//取得某一個資料表內所有的鍵值
 		"KEYS"	=>	"SELECT ic.relname AS index_name, a.attname AS column_name,i.indisunique AS unique_key, i.indisprimary AS primary_key
 	FROM pg_class bc, pg_class ic, pg_index i, pg_attribute a WHERE bc.oid = i.indrelid AND ic.oid = i.indexrelid AND (i.indkey[0] = a.attnum OR i.indkey[1] = a.attnum OR i.indkey[2] = a.attnum OR i.indkey[3] = a.attnum OR i.indkey[4] = a.attnum OR i.indkey[5] = a.attnum OR i.indkey[6] = a.attnum OR i.indkey[7] = a.attnum) AND a.attrelid = bc.oid AND bc.relname = '{TABLE}'" ,
+		//取得某一個資料表內所有的外鍵值
 		"FOREIGN_KEY" => "SELECT
     tc.constraint_name, tc.table_name, kcu.column_name,
     ccu.table_name AS foreign_table_name,
@@ -101,6 +116,21 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 	public	function	__clone(){}
 
 	/*public*/
+	/**
+	 * 是否要儲存異動經歷
+	 * @param string $bolStatus
+	 */
+	public	function	bolSetSaveChangeLog( $bolStatus = NULL )
+	{
+		if( is_null( $bolStatus ) )
+		{
+			$this->bolSaveChangeLog = ! $this->bolSaveChangeLog;
+		}else
+		{
+			$this->bolSaveChangeLog = (boolean)$bolStatus;
+		}
+		return	true;
+	}
 	/**
 	 * 設定連線
 	 * @param	string	$strDBHost	資料庫主機
@@ -356,7 +386,7 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}
 	}
 	/**
-	 * 抓取單一筆的指定欄位
+	 * 抓取單(第)一筆的指定欄位
 	 * @param	integer	$intCache	快取時間	optional
 	 * @param	string	$strSQL	SQL指令
 	 * @param	integer	$intRow	指定資料筆數
@@ -473,11 +503,25 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}else
 		{
 			$resRS = pg_query( $strSQL );
-			$aryRow = pg_fetch_array( $resRS , $intRow );
+			//$aryRow = pg_fetch_array( $resRS , $intRow );
+			if( preg_match( '^[0-9]+$' , $mixCol ) )
+			{
+				$aryRow = pg_fetch_all_columns( $resRS , $mixCol );
+			}else
+			{
+				$aryRow = pg_fetch_all_columns( $resRS , pg_field_num( $resRS , $mixCol ) );
+			}
 			return	$aryRow;
 		}
 	}
 	//以下為Transcation
+	/**
+	 * 設定Transcation的模式
+	 * @param	$mixIsoLevel	設定Transcation等級
+	 * @param	$mixRead	唯讀或讀寫皆可
+	 * @throws ErrorException
+	 * @return boolean
+	 */
 	public	function	bolSetTransMode( $mixIsoLevel , $mixRead )
 	{
 		if( preg_match( '/^[1-4]$/imu' , $mixIsoLevel ) )
@@ -536,6 +580,10 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}
 		return	(boolean)$this->objSetExecute( "SET TRANSACTION {$mixIsoLevel} {$mixRead}" );
 	}
+	/**
+	 * 開始Transcation
+	 * @return boolean
+	 */
 	public	function	bolSetBeginTrans()
 	{
 		$bolReturn = (boolean)$this->objGetSelect( "BEGIN TRANSACTION" );
@@ -545,6 +593,11 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}
 		return	$bolReturn;
 	}
+	/**
+	 * 設定Transcation的儲存點
+	 * @param	string	$strSavePointName	儲存點名稱
+	 * @return boolean
+	 */
 	public	function	bolSetSavePoint( $strSavePointName )
 	{
 		$strSavePointName = strtolower( $strSavePointName );
@@ -555,6 +608,11 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}
 		return	$bolReturn;
 	}
+	/**
+	 * Transaction的回復
+	 * @param string $strSavePointName	回到的儲存點名稱
+	 * @return boolean
+	 */
 	public	function	bolSetRollbackTrans( $strSavePointName = '' )
 	{
 		if( $strSavePointName )
@@ -581,6 +639,10 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		$bolReturn = (boolean)$this->objGetSelect( $strSQL );
 		return	$bolReturn;
 	}
+	/**
+	 * Transaction的確認
+	 * @return boolean
+	 */
 	public	function	bolSetCommitTrans()
 	{
 		$bolReturn = (boolean)$this->objGetSelect( "COMMIT TRANSACTION" );
@@ -592,12 +654,21 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		return	$bolReturn;
 	}
 
-	public	function	strGetQuoted( $strPreQuote )
+	/**
+	 * 為字詞加引號
+	 * @param unknown $strPreQuote
+	 * @return string
+	 */
+	static	public	function	strGetQuoted( $strPreQuote )
 	{
 		return	"'" . pg_escape_bytea( $strPreQuote ) . "'";
 	}
 	//以下為資料庫資料
 	/*以下取得資料的SQL，參考ADOdb裡的SQL*/
+	/**
+	 * 取得所有資料庫
+	 * @return	array
+	 */
 	public	function	aryGetDatabases()
 	{
 		$strSQL = $this->aryPredefineSQL["DB"];
@@ -610,6 +681,11 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}while( $objRS->bolSetMoveNext() );
 		return	$aryReturn;
 	}
+	/**
+	 * 取得某一資料庫的資料表
+	 * @param	boolean	$bolWithoutView	是否含View
+	 * @return	array
+	 */
 	public	function	aryGetTables( $bolWithoutView = false )
 	{
 		$strSQL = $this->aryPredefineSQL["TABLE"];
@@ -632,6 +708,11 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}while( $objRS->bolSetMoveNext() );
 		return	$aryReturn;
 	}
+	/**
+	 * 取得某一個資料表內的欄位資訊
+	 * @param	string	$strTable	資料表名稱
+	 * @return	array
+	 */
 	public	function	aryGetFieldsInfo( $strTable )
 	{
 		$strSQL = $this->aryPredefineSQL["FIELD"];
@@ -651,6 +732,11 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}while( $objRS->bolSetMoveNext() );
 		return	$aryReturn;
 	}
+	/**
+	 * 取得某一資料表內各欄位的名稱
+	 * @param	string	$strTable	資料表名稱
+	 * @return	array
+	 */
 	public	function	aryGetFieldsName( $strTable )
 	{
 		$aryFields = $this->aryGetFieldsInfo( $strTable );
@@ -661,16 +747,31 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}
 		return	$aryReturn;
 	}
+	/**
+	 * 取得某一資料表的主鍵
+	 * @param	string	$strTable	資料表名稱
+	 * @return	array
+	 */
 	public	function	aryGetPrimaryKey( $strTable )
 	{
 		$aryKeys = $this->aryGetKeys( $strTable );
 		return	$aryKeys["primary_key"];
 	}
+	/**
+	 * 取得某一資料表的外鍵
+	 * @param	string	$strTable	資料表名稱
+	 * @return	array
+	 */
 	public	function	aryGetForeignKey( $strTable )
 	{
 		$aryKeys = $this->aryGetKeys( $strTable );
 		return	$aryKeys["unique_key"];
 	}
+	/**
+	 * 取得某一資料表的諸鍵
+	 * @param	string	$strTable	資料表名稱
+	 * @return	array
+	 */
 	protected	function	aryGetKeys( $strTable )
 	{
 		$strSQL = $this->aryPredefineSQL["KEYS"];
@@ -707,6 +808,11 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}while( $objRS->bolSetMoveNext() );
 		return	$aryReturn;
 	}
+	/**
+	 * 輸入異動記錄
+	 * @param	string	$strSQL	異動的SQL
+	 * @return boolean
+	 */
 	protected	function	bolSetChangeLog( $strSQL )
 	{
 		$this->bolSetBeginTrans();
@@ -721,8 +827,9 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 						net_chl_ip	INET NOT NULL DEFAULT '127.0.0.1'::INET ,
 						chr_chl_session	CHAR(127) NOT NULL ,
 						vch_chl_angent	VARCHAR(255) NOT NULL ,
-						vch_chl_command_type	VARCHAR(15)	NOT NULL,
 						vch_chl_table	VARCHAR(255)	NOT	NULL,
+						vch_chl_database VARCHAR(255) NOT NULL,
+						vch_chl_ddl_type VARCHAR(15) NOT NULL ,
 						txt_chl_sql	TEXT	NOT NULL,
 						chr_chl_sha1	CHAR(40) NOT NULL ,
 						PRIMARY KEY ( chr_chl_sha1 )
@@ -735,36 +842,33 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 			}
 		}
 
-		if( ! preg_match( '/^(insert|update|delete|create|alter|drop)/im' , $strSQL , $aryRegs ) )
+		if( ! preg_match( '/^(insert\s+into|update|delete\s+from|create\s+table|alter\s+table|drop\s+table)/im' , $strSQL , $aryRegs ) )
 		{
 			return	false;
 		}
-		$strCommandType = $aryRegs[1];
 		if( preg_match( '/^(insert\s+into\s+tb_change_log|update\s+tb_change_log|delete\s+from\s+tb_change_log)/im' , $strSQL ) )
 		{
 			return	false;
 		}
-		preg_match( '/^(' .
-		'insert\s+into\s+([\_a-z][\_a-z0-9]*\.)?([\_a-z][\_a-z0-9]*)' .
-		'|update\s+([\_a-z][\_a-z0-9]*\.)?([\_a-z][\_a-z0-9]*)' .
-		'|delete\s+from\s+([\_a-z][\_a-z0-9]*\.)?([\_a-z][\_a-z0-9]*)' .
-		'|create\s+table\s+([\_a-z][\_a-z0-9]*\.)?([\_a-z][\_a-z0-9]*)' .
-		'|alter\s+table\s+([\_a-z][\_a-z0-9]*\.)?([\_a-z][\_a-z0-9]*)' .
-		'|drop\s+table\s+([\_a-z][\_a-z0-9]*\.)?([\_a-z][\_a-z0-9]*)' .
-		')/im' , $strSQL , $aryRegs );
+		preg_match( '/^(create\s+from|alter\s+table|drop\s+table|insert\s+into|update|delete\s+from)' .
+		'([\_a-z][\_a-z0-9]*\.)?([\_a-z][\_a-z0-9]*)/im' , $strSQL , $aryRegs );
 		$strTable = $aryRegs[3];
-		$aryNow = aryGetNow();
-		$aryInput["num_chl_time"] = "{$aryNow["unixtimestamp"]} + {$aryNow["microsec"]}";
+		$strDatabase = $aryRegs[2];
+		$strDDLType = strtoupper( preg_replace( '\s+' , ' ' , $aryRegs[1] ) );
+		list( $intNow , $fltNow ) = explode( " " , microtime() );
+		$strUser = $_SESSION["user"]["strUserID"];
+		$aryInput["num_chl_time"] = "{$fltNow} + {$intNow]}";
 		$aryInput["net_chl_ip"] = $this->strGetQuoted( strGetRealIP() );
 		$aryInput["chr_chl_session"] = $this->strGetQuoted( session_id() );
 		$aryInput["vch_chl_agent"] = $this->strGetQuoted( $_SERVER["HTTP_USER_AGENT"] );
-		$aryInput["vch_chl_command_type"] = $this->strGetQuoted( $strCommandType );
 		$aryInput["vch_chl_table"] = $this->strGetQuoted( $strTable );
+		$aryInput["vch_chl_ddl_type"] = $this->strGetQuoted( $strDDLType );
+		$aryInput["vch_chl_database"] = $this->strGetQuoted( ( $strDatabase ? $strDatabase : $this->aryConnectionInfo["strDB"] ) );
 		$aryInput["txt_chl_sql"] = $this->strGetQuoted( $strSQL );
-		$strUser = $_SESSION["user"]["strUserID"];
 		$aryInput["vch_chl_executor"] = $this->strGetQuoted( $strUser );
-		$aryInput["chr_chl_sha1"] = $this->strGetQuoted( serialize( $aryInput ) );
+		$aryInput["chr_chl_sha1"] = $this->strGetQuoted( sha1( serialize( $aryInput ) ) );
 		$strSQL = "INSERT INTO (" . implode( "," , array_keys( $aryInput ) ) . ") VALUES (" . implode( "," , $aryInput ) . ")";
+		unset( $fltNow , $intNow , $strCommandType , $strTable , $strDatabase , $strUser );
 		return	(boolean)$this->objSetExecute( $strSQL );
 	}
 }

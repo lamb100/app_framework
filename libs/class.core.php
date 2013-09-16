@@ -250,13 +250,4 @@ abstract	class	Core	extends	stdClass
 		}
 		return	$this;
 	}
-
-	protected	function	KeepChangeLog( $strSQL , $strClass , $strMethod )
-	{
-		$strTime = microtime();
-		$this->ChangeLog[$strTime]['txt_chl_sql'] = "'" . $strSQL . "'";
-		$this->ChangeLog[$strTime]['vch_chl_class'] = "'" . $strClass . "'";
-		$this->ChangeLog[$strTime]['vch_chl_method'] = "'" . $strMethod . "'";
-		//解析SQL
-	}
 }
