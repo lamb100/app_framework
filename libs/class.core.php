@@ -28,7 +28,9 @@ abstract	class	Core	extends	stdClass
 	protected	$ParamsDefine = array();
 	protected	$Request = array();
 	protected	$Session = array();
-	protected	$Process = array();
+	public	$LastResult = false;
+	protected	$DB = array();
+	protected	$View = array();
 
 
 	/*Magic Methods*/
@@ -110,7 +112,7 @@ abstract	class	Core	extends	stdClass
 			$this->SetMsgTrace( $this->GetLang( "NO_METHOD" , $aryReplace ) , __FILE__ , __LINE__ );
 		}
 		//return	$this->{$strMethod}();
-		$strPHP = 'return $this->' . $strMethod . '( ' . $strParams . ' );';
+		$strPHP = 'return $this->Exec' . $strMethod . '( ' . $strParams . ' );';
 		eval( $strPHP );
 	}
 

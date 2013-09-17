@@ -15,11 +15,11 @@
 <column alias="chr_usb_pass" auto-increment="false" column-size="56" decimal-digits="0" default-value="" id="3b69ccba:14110f43c8c:-7fea" mandatory="false" name="chr_usb_pass">
 <data-type name="CHAR" selected-variant-pattern="CHAR(%n)"/>
 </column>
-<column alias="tsp_usb_first" auto-increment="false" column-size="0" decimal-digits="0" default-value="" id="3b69ccba:14110f43c8c:-7fe7" mandatory="false" name="tsp_usb_first" remarks="第一次登錄時間">
-<data-type name="TIMESTAMP" selected-variant-pattern="TIMESTAMP"/>
+<column alias="num_usb_first" auto-increment="false" column-size="20" decimal-digits="7" default-value="" id="3b69ccba:14110f43c8c:-7fe7" mandatory="false" name="num_usb_first" remarks="第一次登錄時間">
+<data-type name="NUMERIC" selected-variant-pattern="NUMERIC(%p,%s)"/>
 </column>
-<column alias="tsp_usb_last" auto-increment="false" column-size="0" decimal-digits="0" default-value="" id="3b69ccba:14110f43c8c:-7fe6" mandatory="false" name="tsp_usb_last" remarks="前次更新時間">
-<data-type name="TIMESTAMP" selected-variant-pattern="TIMESTAMP"/>
+<column alias="num_usb_last" auto-increment="false" column-size="20" decimal-digits="7" default-value="" id="3b69ccba:14110f43c8c:-7fe6" mandatory="false" name="num_usb_last" remarks="前次更新時間">
+<data-type name="NUMERIC" selected-variant-pattern="NUMERIC(%p,%s)"/>
 </column>
 </column-list>
 <primary-key id="3b69ccba:14110f43c8c:-7ff9" name="PK_TB_USER_BASIC">

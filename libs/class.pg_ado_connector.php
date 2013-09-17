@@ -312,7 +312,7 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 				throw	$objE;
 				return	false;
 			}
-			return	new	PGADORecordset( $strSQL , $resResult , $this->resConnection );
+			return	(boolean)$resResult;
 		}
 	}
 	/**
@@ -464,7 +464,7 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}else
 		{
 			$resRS = pg_query( $strSQL );
-			$aryRow = pg_fetch_array( $resRS , $intRows );
+			$aryRow = pg_fetch_array( $resRS , (int)$intRows );
 			return	$aryRow;
 		}
 	}
