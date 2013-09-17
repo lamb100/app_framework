@@ -33,8 +33,6 @@ class	UserModule	extends	Core
 	protected	function	&BeforeConstruct()
 	{
 		parent::BeforeConstruct();
-		$this->DB = new PGADOConnector();
-		$this->DB->bolSetConnect( $_APPF["DB_HOST"] , $_APPF["DB_USER"] , $_APPF["DB_PASS"] , $_APPF["DB_NAME"] , $_APPF["DB_PORT"] );
 		$this->LastResult = true;
 		return	$this;
 	}
@@ -101,7 +99,10 @@ class	UserModule	extends	Core
 		$strQuery = "";
 		if( is_array( $mixQuery ) )
 		{
-
+			$aryFields = $this->DB->aryGetFieldsName( "tb_user_basic" );
 		}else if( preg_match( '/^\s+\s+$/i' ) )
+		{
+			
+		}
 	}
 }

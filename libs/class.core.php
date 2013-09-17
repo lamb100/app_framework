@@ -258,4 +258,34 @@ abstract	class	Core	extends	stdClass
 		}
 		return	$this;
 	}
+	
+	protected	function	&InitDB()
+	{
+		$objDB = new PGADOConnector();
+		try
+		{
+			$objDB->bolSetConnect( $_APPF["DB_HOST"] , $_APPF["DB_USER"] , $_APPF["DB_PASS"] , $_APPF["DB_NAME"] , $_APPF["DB_PORT"] );
+			$this->DB = &$objDB;
+		}catch( ErrorException $objE )
+		{
+			$this->SetMsgTrace( $objE->getMessage() , $objE->getFile() , $objE->getLine() );
+			$this->LastResult = false;
+		}
+		return	$this;
+	}
+	protected	function	ExecuteDB()
+	{
+		$aryParams = func_get_args();
+		$strMethods = $aryParams[0];
+		$strClass = get_class( $this );
+		
+		if( isset( $this->Cache["get_class_methods"][$strClass] ) )
+		{
+			$aryMethod = get_class_methods( $strClass );
+			$this->Cache["get_class_methods"][$strClass] = &$aryMethod;
+		}else
+		{
+			$aryMethod = &$this->Cache["get_class_methods"][$strClass];
+		}
+	}
 }
