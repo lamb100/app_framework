@@ -10,6 +10,7 @@ define( "intBPACTransReadWrite" , 1 );
 define( "intBPACTransReadOnly" , 0 );
 
 define( "intBPACMetaDataCache" , 15 );
+define( "DEFAULT_ROWS_IN_PAGE" , 25 );
 
 class	PGADOConnector
 {
@@ -48,6 +49,11 @@ class	PGADOConnector
 	 * @var	array
 	 */
 	protected	$aryTransSavePoints = array();
+	/**
+	 * Cache
+	 * @var	array
+	 */
+	private	$aryCache = array();
 	/**
 	 * 預存的一些系統相關的SQL指令
 	 * @var	array
@@ -671,14 +677,21 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 	 */
 	public	function	aryGetDatabases()
 	{
-		$strSQL = $this->aryPredefineSQL["DB"];
-		$objRS = $this->objSetExecute( intBPACMetaDataCache , $strSQL );
-		$aryReturn = array();
-		do
+		if( ! isset( $this->aryCache["DB"] ) )
 		{
-			$aryRow = $objRS->aryGetFetchRow();
-			$aryReturn[] = $aryRow["name"];
-		}while( $objRS->bolSetMoveNext() );
+			$strSQL = $this->aryPredefineSQL["DB"];
+			$objRS = $this->objSetExecute( intBPACMetaDataCache , $strSQL );
+			$aryReturn = array();
+			do
+			{
+				$aryRow = $objRS->aryGetFetchRow();
+				$aryReturn[] = $aryRow["name"];
+			}while( $objRS->bolSetMoveNext() );
+			$this->aryCache["DB"] = &$aryReturn;
+		}else
+		{
+			$aryReturn = &$this->aryCache["DB"];
+		}
 		return	$aryReturn;
 	}
 	/**
@@ -688,24 +701,31 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 	 */
 	public	function	aryGetTables( $bolWithoutView = false )
 	{
-		$strSQL = $this->aryPredefineSQL["TABLE"];
-		$objRS = $this->objSetExecute( intBPACMetaDataCache , $strSQL );
-		$aryReturn = array();
-		do
+		if( ! isset( $this->aryCache["TABLE"][(boolean)$bolWithoutView] ) )
 		{
-			if( $bolWithoutView )
+			$strSQL = $this->aryPredefineSQL["TABLE"];
+			$objRS = $this->objSetExecute( intBPACMetaDataCache , $strSQL );
+			$aryReturn = array();
+			do
 			{
-				if( $aryRow["type"] == "V" )
+				if( $bolWithoutView )
 				{
-					if( $objRS->bolSetMoveNext() )
-						continue;
-					else
-						break;
+					if( $aryRow["type"] == "V" )
+					{
+						if( $objRS->bolSetMoveNext() )
+							continue;
+						else
+							break;
+					}
 				}
-			}
-			$aryRow = $objRS->aryGetFetchRow();
-			$aryReturn[] = $aryRow["name"];
-		}while( $objRS->bolSetMoveNext() );
+				$aryRow = $objRS->aryGetFetchRow();
+				$aryReturn[] = $aryRow["name"];
+			}while( $objRS->bolSetMoveNext() );
+			$this->aryCache["TABLE"][(boolean)$bolWithoutView] = &$aryReturn;
+		}else
+		{
+			$aryReturn = &$this->aryCache["TABLE"][(boolean)$bolWithoutView];
+		}
 		return	$aryReturn;
 	}
 	/**
@@ -715,21 +735,28 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 	 */
 	public	function	aryGetFieldsInfo( $strTable )
 	{
-		$strSQL = $this->aryPredefineSQL["FIELD"];
-		$strSQL = str_replace(
-			array( "{DB}" , "{TABLE}" ) ,
-			array( $this->aryConnectionInfo["strDB"] ,
-			$strTable ) , $strSQL );
-		$aryKeys = $this->aryGetKeys( $strTable );
-		$objRS = $this->objSetExecute( intBPACMetaDataCache , $strSQL );
-		$aryReturn = array();
-		do
+		if( ! isset( $this->aryCache["FIELD_INFO"][$strTable] ) )
 		{
-			$aryRow = $objRS->aryGetFetchRow();
-			$aryRow["pk"] = in_array( $aryRow["name"] , $aryKeys["primary_key"] );
-			$aryRow["uk"] = in_array( $aryRow["name"] , $aryKeys["unique_key"] );
-			$aryReturn[] = $aryRow;
-		}while( $objRS->bolSetMoveNext() );
+			$strSQL = $this->aryPredefineSQL["FIELD"];
+			$strSQL = str_replace(
+				array( "{DB}" , "{TABLE}" ) ,
+				array( $this->aryConnectionInfo["strDB"] ,
+				$strTable ) , $strSQL );
+			$aryKeys = $this->aryGetKeys( $strTable );
+			$objRS = $this->objSetExecute( intBPACMetaDataCache , $strSQL );
+			$aryReturn = array();
+			do
+			{
+				$aryRow = $objRS->aryGetFetchRow();
+				$aryRow["pk"] = in_array( $aryRow["name"] , $aryKeys["primary_key"] );
+				$aryRow["uk"] = in_array( $aryRow["name"] , $aryKeys["unique_key"] );
+				$aryReturn[] = $aryRow;
+			}while( $objRS->bolSetMoveNext() );
+			$this->aryCache["FIELD_INFO"][$strTable] = &$aryReturn;
+		}else
+		{
+			$aryReturn = &$this->aryCache["FIELD_INFO"][$strTable];
+		}
 		return	$aryReturn;
 	}
 	/**
@@ -739,11 +766,18 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 	 */
 	public	function	aryGetFieldsName( $strTable )
 	{
-		$aryFields = $this->aryGetFieldsInfo( $strTable );
-		$aryReturn = array();
-		foreach( $aryFields AS $aryField )
+		if( ! isset( $this->aryCache["FIELD_NAME"][$strTable] ) )
 		{
-			$aryReturn[] = $aryField["name"];
+			$aryFields = $this->aryGetFieldsInfo( $strTable );
+			$aryReturn = array();
+			foreach( $aryFields AS $aryField )
+			{
+				$aryReturn[] = $aryField["name"];
+			}
+			$this->aryCache["FIELD_NAME"][$strTable] = &$aryReturn;
+		}else
+		{
+			$aryReturn = &$this->aryCache["FIELD_NAME"][$strTable];
 		}
 		return	$aryReturn;
 	}
@@ -774,38 +808,45 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 	 */
 	protected	function	aryGetKeys( $strTable )
 	{
-		$strSQL = $this->aryPredefineSQL["KEYS"];
-		$strSQL = str_replace(
-			array( "{TABLE}" ) ,
-			array( $strTable ) , $strSQL );
-		$objRS = $this->objSetExecute( intBPACMetaDataCache , $strSQL );
-		$aryReturn = array();
-		do
+		if( ! isset( $this->aryCache["KEYS"][$strTable] ) )
 		{
-			$aryRow = $objRS->aryGetFetchRow();
-			$aryReturn["full"][] = $aryRow;
-			if( $aryRow["primary_key"] )
+			$strSQL = $this->aryPredefineSQL["KEYS"];
+			$strSQL = str_replace(
+				array( "{TABLE}" ) ,
+				array( $strTable ) , $strSQL );
+			$objRS = $this->objSetExecute( intBPACMetaDataCache , $strSQL );
+			$aryReturn = array();
+			do
 			{
-				$aryReturn["primary_key"] = $aryRow;
-			}
-			if( $aryRow["unique_key"] )
+				$aryRow = $objRS->aryGetFetchRow();
+				$aryReturn["full"][] = $aryRow;
+				if( $aryRow["primary_key"] )
+				{
+					$aryReturn["primary_key"] = $aryRow;
+				}
+				if( $aryRow["unique_key"] )
+				{
+					$aryReturn["unique_key"] = $aryRow;
+				}
+			}while( $objRS->bolSetMoveNext() );
+			//取得外鍵
+			$strSQL = $this->aryPredefineSQL["FOREIGN_KEY"];
+			$strSQL = str_replace(
+				array( "{TABLE}" ) ,
+				array( $strTable ) , $strSQL );
+			$objRS = $this->objSetExecute( intBPACMetaDataCache , $strSQL );
+			do
 			{
-				$aryReturn["unique_key"] = $aryRow;
-			}
-		}while( $objRS->bolSetMoveNext() );
-		//取得外鍵
-		$strSQL = $this->aryPredefineSQL["FOREIGN_KEY"];
-		$strSQL = str_replace(
-			array( "{TABLE}" ) ,
-			array( $strTable ) , $strSQL );
-		$objRS = $this->objSetExecute( intBPACMetaDataCache , $strSQL );
-		do
+				$aryReturn["foreign_key"][$aryRow["constraint_name"]]["base"]["table"] = $aryRow["table_name"];
+				$aryReturn["foreign_key"][$aryRow["constraint_name"]]["base"]["columns"][] = $aryRow["column_name"];
+				$aryReturn["foreign_key"][$aryRow["constraint_name"]]["reference"]["table"] = $aryRow["foreign_table_name"];
+				$aryReturn["foreign_key"][$aryRow["constraint_name"]]["reference"]["columns"][] = $aryRow["foreign_column_name"];
+			}while( $objRS->bolSetMoveNext() );
+			$this->aryCache["KEYS"][$strTable] = &$aryReturn;
+		}else
 		{
-			$aryReturn["foreign_key"][$aryRow["constraint_name"]]["base"]["table"] = $aryRow["table_name"];
-			$aryReturn["foreign_key"][$aryRow["constraint_name"]]["base"]["columns"][] = $aryRow["column_name"];
-			$aryReturn["foreign_key"][$aryRow["constraint_name"]]["reference"]["table"] = $aryRow["foreign_table_name"];
-			$aryReturn["foreign_key"][$aryRow["constraint_name"]]["reference"]["columns"][] = $aryRow["foreign_column_name"];
-		}while( $objRS->bolSetMoveNext() );
+			$aryReturn = &$this->aryCache["KEYS"][$strTable];
+		}
 		return	$aryReturn;
 	}
 	/**
@@ -870,6 +911,66 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		$strSQL = "INSERT INTO (" . implode( "," , array_keys( $aryInput ) ) . ") VALUES (" . implode( "," , $aryInput ) . ")";
 		unset( $fltNow , $intNow , $strCommandType , $strTable , $strDatabase , $strUser );
 		return	(boolean)$this->objSetExecute( $strSQL );
+	}
+
+	public	function	GetSimpleSQLByPage( $strTable , $intPages = 1 , $intNumInPage = DEFAULT_ROWS_IN_PAGE , $mixFields = NULL , $mixWhere = NULL , $mixGroup = NULL , $mixHaving = NULL , $mixOrderBy = NULL )
+	{
+		//取得欄位{
+		if( is_null( $mixFields ) )
+		{
+			$strFields = '*';
+		}else if( is_array( $mixFields ) )
+		{
+			$aryFields = array();
+			foreach(  $mixFields AS $mixField => $mixAlias )
+			{
+				if( preg_match( '/^[0-9]+$/' , $mixField ) )
+				{
+					$aryFields[] = '"' . $mixField . '"';
+				}else
+				{
+					$aryFields[] = "{$mixField} AS \"{$mixAlias}\"";
+				}
+			}
+			$strFields = implode( ',' , $aryFields );
+		}else
+		{
+			$strFields = $mixFields;
+		}
+		//}
+
+		//拚湊WHERE的子句{
+		$strQuery = "";
+		if( is_array( $mixQuery ) )
+		{
+			$strQuery = '';
+			foreach( $mixQuery AS $mixK => $strV )
+			{
+				if( preg_match( '/^[0-9]+$/i' , $mixK ) )
+				{
+					$strQuery .= ( $strQuery ? " AND " : "" ) . "( {$strV} )" ;
+				}else
+				{
+					$strQuery .= ( $strQuery ? " AND " : "" ) . "( {$mixK} = {$strV} )" ;
+				}
+			}
+		}else if( preg_match( '/(\>|\<|\=|\!)/i' , $mixQuery ) )
+		{
+			$strQuery = $mixQuery;
+		}
+		//}
+
+		//Group By
+		if( ! is_null( $mixGroup ) )
+		{
+			if( is_array( $mixGroup ) )
+			{
+				foreach( $mixGroup AS $mixK => $strV)
+				{
+
+				}
+			}
+		}
 	}
 }
 ?>

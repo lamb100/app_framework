@@ -66,21 +66,25 @@ abstract	class	Core	extends	stdClass
 	 */
 	public	function	GetLang( $strLangCode , $aryReplacePair = array() )
 	{
-		if( isset( $_LANG[$strLangCode] ) )
+		if( ! isset( $this->Cache["GetLang"][$strLangCode][serialize( $aryReplacePair )] ) )
 		{
-			$strReturn = $_LANG[$strLangCode];
-			$arySource = $aryTarget = array();
-		}else
-		{
-			return	$strLangCode;
-		}
+			if( isset( $_LANG[$strLangCode] ) )
+			{
+				$strReturn = $_LANG[$strLangCode];
+				$arySource = $aryTarget = array();
+			}else
+			{
+				return	$strLangCode;
+			}
 
-		foreach( $aryReplacePair AS $strSource => $strTarget )
-		{
-			$arySource[] = "{{$strSource}}";
-			$aryTarget[] = $strTarget;
+			foreach( $aryReplacePair AS $strSource => $strTarget )
+			{
+				$arySource[] = "{{$strSource}}";
+				$aryTarget[] = $strTarget;
+			}
+			$this->Cache["GetLang"][$strLangCode][serialize( $aryReplacePair )] = str_replace( $arySource , $aryTarget , $strReturn );
 		}
-		return	str_replace( $arySource , $aryTarget , $strReturn );
+		return	$this->Cache["GetLang"][$strLangCode][serialize( $aryReplacePair )];
 	}
 
 	/**
@@ -95,6 +99,7 @@ abstract	class	Core	extends	stdClass
 		if( preg_match( '/module$/i' , $strClass ) )
 		{
 			$this->SetMsgTrace(  $this->GetLang( "NO_USE_FOR_MODULE" ) , __FILE__ , __LINE__ );
+			throw	new	ErrorException( $this->GetLang( "NO_USE_FOR_MODULE" ) , 500 , 999 , __FILE__ , __LINE__ );
 			return	false;
 		}
 		$aryParams = func_get_args();
@@ -105,11 +110,12 @@ abstract	class	Core	extends	stdClass
 		{
 			$strParams .= ( $strParams ? " , " : "" ) . '$params[' . $intK . ']';
 		}
-		$aryMethod = get_class_methods( $this );
-		if( ! in_array( $strMethod , $aryMethod ) )
+		if( ! $this->IsMethodInTheObject( "Exec{$strMethod}" , $this ) )
 		{
 			$aryReplace["METHOD"] = $strMethod;
 			$this->SetMsgTrace( $this->GetLang( "NO_METHOD" , $aryReplace ) , __FILE__ , __LINE__ );
+			throw	new	ErrorException( $this->GetLang( "NO_METHOD" , $aryReplace ) , 500 , 999 , __FILE__ , __LINE__ );
+			return	false;
 		}
 		//return	$this->{$strMethod}();
 		$strPHP = 'return $this->Exec' . $strMethod . '( ' . $strParams . ' );';
@@ -258,7 +264,10 @@ abstract	class	Core	extends	stdClass
 		}
 		return	$this;
 	}
-	
+	/**
+	 * 初始化DB
+	 * @return Core
+	 */
 	protected	function	&InitDB()
 	{
 		$objDB = new PGADOConnector();
@@ -277,8 +286,55 @@ abstract	class	Core	extends	stdClass
 	{
 		$aryParams = func_get_args();
 		$strMethods = $aryParams[0];
-		$strClass = get_class( $this );
-		
+		unset( $aryParams[0] );
+		//先檢查這個類別是否存在
+		if( ! $this->IsMethodInTheObject(  $strMethods, $this->DB) )
+		{
+			$strMessage = $this->GetLang( $this->GetLang( "NO_METHOD_IN" , array( "METHOD" => $strMethods , "CLASS" => get_class_methods( $this->DB )  ) ) );
+			throw	new	ErrorException( $strMessage , 500 , 999 , __FILE__ , __LINE__ );
+			return	false;
+		}
+		$strParams = '';
+		foreach( $aryParams AS $intK => $mixV )
+		{
+			$strParams .= ( $strParams ? "," : "" ) . '$aryParams[' . $intK . ']';
+		}
+		$strPHP = '$this->DB->' . $strMethods . '( ' . $strParams . ' );';
+		eval( $strPHP );
+	}
+
+	protected	function	&InitView()
+	{
+		$objView = new Smartruct();
+		$objView->vidSetPrepare( $_APPF["DIR_TPL"] , $_APPF["DIR_CTPL"] );
+		return	$this;
+	}
+
+	protected	function	ExecView()
+	{
+		$aryParams = func_get_args();
+		$strMethods = $aryParams[0];
+		unset( $aryParams[0] );
+		//先檢查這個類別是否存在
+		if( ! $this->IsMethodInTheObject(  $strMethods, $this->View) )
+		{
+			$strMessage = $this->GetLang( $this->GetLang( "NO_METHOD_IN" , array( "METHOD" => $strMethods , "CLASS" => get_class_methods( $this->View )  ) ) );
+			throw	new	ErrorException( $strMessage , 500 , 999 , __FILE__ , __LINE__ );
+			return	false;
+		}
+		$strParams = '';
+		foreach( $aryParams AS $intK => $mixV )
+		{
+			$strParams .= ( $strParams ? "," : "" ) . '$aryParams[' . $intK . ']';
+		}
+		$strPHP = '$this->View->' . $strMethods . '( ' . $strParams . ' );';
+		eval( $strPHP );
+	}
+
+	protected	function	IsMethodInTheObject( $strMethod , $objObject )
+	{
+		$strClass = get_class( $objObject );
+
 		if( isset( $this->Cache["get_class_methods"][$strClass] ) )
 		{
 			$aryMethod = get_class_methods( $strClass );
@@ -287,5 +343,6 @@ abstract	class	Core	extends	stdClass
 		{
 			$aryMethod = &$this->Cache["get_class_methods"][$strClass];
 		}
+		return	in_array( $strMethod , $aryMethod );
 	}
 }

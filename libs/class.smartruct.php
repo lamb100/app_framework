@@ -161,17 +161,24 @@ class	Smartruct
 	 */
 	public	function	vidSetPrepare( $strTemplateDir , $strCompiledDir = strConfCompiledTemplateDir )
 	{
-		if( ! file_exists( $strTemplateDir ) )
+		try
 		{
-			mkdir( $strTemplateDir );
-		}
-		$this->strTemplateDir = realpath( $strTemplateDir );
-		if( ! file_exists( $strCompiledDir ) )
+			if( ! file_exists( $strTemplateDir ) )
+			{
+				mkdir( $strTemplateDir );
+			}
+			$this->strTemplateDir = realpath( $strTemplateDir );
+			if( ! file_exists( $strCompiledDir ) )
+			{
+				mkdir( $strCompiledDir );
+			}
+			$this->strCompiledDir = $strCompiledDir;
+			return;
+		}catch( ErrorException $objE )
 		{
-			mkdir( $strCompiledDir );
+			throw	$objE;
+			return;
 		}
-		$this->strCompiledDir = $strCompiledDir;
-		return;
 	}
 
 	/**

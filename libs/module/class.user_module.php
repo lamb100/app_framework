@@ -3,6 +3,8 @@ include( "../class.pg_ado_connector.php" );
 include( "../class.pg_ado_recordset.php" );
 include( "{$_APPF["DIR_LANG"]}/{$_APPF["LANG"]}/lang.user.php" );
 
+define( "USER_DB_MAX_READ_ROWS" , 1000 );
+
 class	UserModule	extends	Core
 {
 	/*Magic Methods*/
@@ -34,9 +36,14 @@ class	UserModule	extends	Core
 	{
 		parent::BeforeConstruct();
 		$this->LastResult = true;
+		$this->InitDB();
 		return	$this;
 	}
-
+	/**
+	 * 設定tb_user_basic
+	 * @param unknown $arySet
+	 * @return UserModule
+	 */
 	protected	function	&SetUserBasic( $arySet = array() )
 	{
 		$aryNow = aryGetNow();
@@ -46,8 +53,8 @@ class	UserModule	extends	Core
 			$this->LastResult = false;
 			return	$this;
 		}
-		$strSQL = "SELECT chr_usb_pass FROM tb_user_basic WHERE vch_usb_id = " . $this->DB->strGetQuote( $arySet["vch_usb_id"] );
-		$aryRow = $this->DB->aryGetRow( 0 );
+		$strSQL = "SELECT chr_usb_pass FROM tb_user_basic WHERE vch_usb_id = " . $this->ExecuteDB( "strGetQuote" , $arySet["vch_usb_id"] );
+		$aryRow = $this->ExecuteDB( "aryGetRow" ,  0 );
 		$bolInsert = true;
 		if( $aryRow )
 		{
@@ -60,8 +67,8 @@ class	UserModule	extends	Core
 			}
 			$bolInsert = false;
 		}
-		$aryNewSet["vch_usb_id"] = $this->DB->strGetQuote( $arySet["vch_usb_id"] );
-		$aryNewSet["chr_usb_pass"] = $this->DB->strGetQuote( strGetCrypt( $arySet["chr_usb_pass"] ) );
+		$aryNewSet["vch_usb_id"] = $this->ExecuteDB( "strGetQuote" ,  $arySet["vch_usb_id"] );
+		$aryNewSet["chr_usb_pass"] = $this->ExecuteDB( "strGetQuote" ,  strGetCrypt( $arySet["chr_usb_pass"] ) );
 		$aryNewSet["num_usb_last"] = "{$aryNow["unixtimestamp"]} + {$aryRow["microsec"]}";
 		if( $bolInsert )
 		{
@@ -78,7 +85,7 @@ class	UserModule	extends	Core
 		}
 		try
 		{
-			if( $this->DB->bolSetExecute( $strSQL ) )
+			if( $this->ExecDB( "bolSetExecute" , $strSQL ) )
 			{
 				$this->LastResult = true;
 			}else
@@ -94,15 +101,62 @@ class	UserModule	extends	Core
 		return	$this;
 	}
 
-	protected	function	GetUserBasic( $mixQuery = NULL )
+	protected	function	GetUserBasic( $mixFields = NULL , $mixQuery = NULL , $bolGetSQL = false )
 	{
+		//拚湊WHERE的子句{
 		$strQuery = "";
 		if( is_array( $mixQuery ) )
 		{
-			$aryFields = $this->DB->aryGetFieldsName( "tb_user_basic" );
-		}else if( preg_match( '/^\s+\s+$/i' ) )
+			$aryFields = $this->ExecDB( "aryGetFieldsName" , "tb_user_basic" );
+			foreach( $mixQuery AS $mixK => $strV )
+			{
+				if( in_array( $mixK , $aryFields ) )
+				{
+					switch( $mixK )
+					{
+						case	"chr_usb_sha1":
+						case	"vch_usb_id":
+							$strQuery .= ( $strQuery ? " AND " : "" ) . "( \"{$mixK}\" = " . $this->ExecuteDB( "strGetQuote" , $strV ) . " )";
+						break;
+						default:
+							$strQuery .= ( $strQuery ? " AND " : "" ) . "( \"{$mixK}\" = " . $strV . " )";
+						break;
+					}
+				}else if( preg_match( '/(\>|\<|\=|\!)/i' , $strV ) )
+				{
+					$strQuery .= ( $strQuery ? " AND " : "" ) . "( " . $strV . " )";
+				}
+			}
+		}else if( preg_match( '/(\>|\<|\=|\!)/i' , $mixQuery ) )
 		{
-			
+			$strQuery = $mixQuery;
 		}
+		//}
+		$strSQL = "SELECT * FROM tb_user_basic WHERE " . ( $strQuery ? $strQuery : " true " );
+		if( $bolGetSQL )
+		{
+			return	$strSQL;
+		}
+		try
+		{
+			$objRS = $this->ExecuteDB( "objSetExecute" , $strSQL );
+		}catch( ErrorException $objE )
+		{
+			$this->SetMsgTrace( $this->GetLang( "ERROR_FOR_SQL_EXECUTE" , array( "REASON" => $objE->getMessage() ) ) , $objE->getFile() , $objE->getLine() );
+			throw	$objE;
+		}
+		$aryRows = array();
+		$intCount = 0;
+		while( ! $objRS->bolEOF )
+		{
+			$aryRows[] = $objRS->aryGetFetchRow();
+			$objRS->bolSetMoveNext();
+			$intCount++;
+			if( $intCount > USER_DB_MAX_READ_ROWS )
+			{
+				break;
+			}
+		}
+		return	$aryRows;
 	}
 }
