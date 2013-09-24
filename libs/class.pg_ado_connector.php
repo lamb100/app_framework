@@ -913,7 +913,7 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		return	(boolean)$this->objSetExecute( $strSQL );
 	}
 
-	public	function	GetSimpleSQLByPage( $strTable , $intPages = 1 , $intNumInPage = DEFAULT_ROWS_IN_PAGE , $mixFields = NULL , $mixWhere = NULL , $mixGroup = NULL , $mixHaving = NULL , $mixOrderBy = NULL )
+	public	function	GetSimpleSelectSQL( $strTable , $mixFields = NULL , $mixWhere = NULL , $mixGroup = NULL , $mixHaving = NULL , $mixOrderBy = NULL )
 	{
 		//取得欄位{
 		if( is_null( $mixFields ) )
@@ -960,16 +960,130 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}
 		//}
 
-		//Group By
+		//Group By{
 		if( ! is_null( $mixGroup ) )
 		{
+			$aryGroup = array();
 			if( is_array( $mixGroup ) )
 			{
 				foreach( $mixGroup AS $mixK => $strV)
 				{
-
+					if( preg_match( '/^[0-9]+$/' , $mixField ) )
+					{
+						$aryGroup[] = '"' . $mixField . '"';
+					}else
+					{
+						$aryGroup[] = "\"{$mixAlias}\"";
+					}
+				}
+			}else
+			{
+				$aryGroup[] = $mixGroup;
+			}
+			$strGroup = implode( "," , $aryGroup );
+			//Having{
+			if( is_null( $mixHaving ) )
+			{
+				$strHaving = "";
+				if( is_array( $mixHaving ) )
+				{
+					$strHaving = '';
+					foreach( $mixHaving AS $mixK => $strV )
+					{
+						if( preg_match( '/^[0-9]+$/i' , $mixK ) )
+						{
+							$strHaving .= ( $strHaving ? " AND " : "" ) . "( {$strV} )" ;
+						}else
+						{
+							$strHaving .= ( $strHaving ? " AND " : "" ) . "( {$mixK} = {$strV} )" ;
+						}
+					}
+				}else if( preg_match( '/(\>|\<|\=|\!)/i' , $mixHaving ) )
+				{
+					$strHaving = $mixHaving;
 				}
 			}
+			//}
+		}
+		//}
+		//ORDER BY{
+		if( ! is_null( $mixOrderBy ) )
+		{
+			if( is_array( $mixOrderBy ) )
+			{
+				$aryOrderBy = array();
+				foreach( $mixOrderBy AS $mixK => $mixV )
+				{
+					if( preg_match( '/^[0-9]+$/i' , $mixK ) )
+					{
+						$aryOrderBy[] = $mixV;
+					}else
+					{
+						switch( true )
+						{
+							default:
+							case	( $mixV === true ):
+							case	preg_match( '/^(ASC|ASCEND|\+)$/i' , $mixV ):
+								$aryOrderBy[] = $mixV . " ASC";
+							break;
+							case	( $mixV === false ):
+							case	preg_match( '/^(DESC|DESCEND|\-)$/i' , $mixV ):
+								$aryOrderBy[] = $mixV . " DESC";
+							break;
+						}
+					}
+				}
+			}else
+			{
+				$aryOrderBy[] = $mixOrderBy;
+			}
+			$strOrderBy = implode( "," , $aryOrderBy );
+		}
+		//}
+		//}
+		//Return
+		return	"SELECT {$strFields} FROM {$strTable}" .
+			( $strQuery ? " WHERE {$strQuery}" : "" ) .
+			( $strGroup ? " GROUP BY {$strQuery}" : "" ) .
+			( $strHaving ? " HAVING {$strHaving}" : "" ) .
+			( $strOrderBy ? " ORDER BY {$strOrderBy}" : "" ) .
+			( $strLimit ? $strLimit : "" );
+	}
+	public	function	GetSimpleSelectSQLByPage( $strTable , $intPages = 1 , $intNumInPage = DEFAULT_ROWS_IN_PAGE , $mixFields = NULL , $mixWhere = NULL , $mixGroup = NULL , $mixHaving = NULL , $mixOrderBy = NULL )
+	{
+		$strSQL = $this->GetSimpleSelectSQL( $strTable , $mixFields , $mixWhere , $mixGroup , $mixHaving , $mixOrderBy );
+		//Limit{
+		if( $intPages > 0 )
+		{
+			$intOffset = ( $intPages - 1 ) * $intNumInPage;
+			$strLimit = " LIMIT {$intNumInPage} OFFSET {$intOffset}";
+		}
+		return	$strSQL . $strLimit;
+	}
+
+	public	function	GetSimpleSelectSQLByRange( $strTable , $intStart = 0 , $intEnd = 0 , $mixFields = NULL , $mixWhere = NULL , $mixGroup = NULL , $mixHaving = NULL , $mixOrderBy = NULL )
+	{
+		$strSQL = $this->GetSimpleSelectSQL( $strTable , $mixFields , $mixWhere , $mixGroup , $mixHaving , $mixOrderBy );
+		if( $intEnd > $intStart )
+		{
+			list( $intEnd , $intStart ) = array( $intStart , $intEnd );
+		}
+		if( $intEnd >= 0 && $intStart >= 0 )
+		{
+			$intNums = $intEnd - $intStart + 1;
+			$strLimit = " LIMIT {$intNums} OFFSET {$intStart}";
+		}
+		return	$strSQL . $strLimit;
+	}
+	public	function	GetCreateTableSQL( $strTable , $aryFields , $aryKeys , $strOtherTableOption = NULL )
+	{
+		$aryCreateFields = array();
+		foreach( $aryFields AS $strFieldName => $aryFieldInfo )
+		{
+			$aryFieldInfo[] = "{$strFieldName} {$aryFieldInfo["type"]} " .
+				( isset( $aryFieldInfo["not_null"] ) ? " NOT NULL " : "" ) .
+				( $aryFieldInfo["default"] ? " DEFAULT " : "" ) . $aryFieldInfo["default"] .
+				( isset( $aryFieldInfo["primary_key"] ) ? " PRIMARY KEY " : "" );
 		}
 	}
 }
