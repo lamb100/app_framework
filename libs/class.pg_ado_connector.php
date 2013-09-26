@@ -1085,6 +1085,40 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 				( $aryFieldInfo["default"] ? " DEFAULT " : "" ) . $aryFieldInfo["default"] .
 				( isset( $aryFieldInfo["primary_key"] ) ? " PRIMARY KEY " : "" );
 		}
+		$aryCreateKeys = array();
+		foreach( $aryKeys AS $strType => $aryKeyInfo )
+		{
+			switch( true )
+			{
+				case	preg_match( '/^(primary\_keys?|pk|primarykeys?)$/i' , $strType ):
+					$strType = "pk";
+				break;
+				case	preg_match( '/^(unique\_keys?|uk|uniquekeys?)$/i' , $strType ):
+					$strType = "uk";
+				break;
+				case	preg_match( '/^(foreign\_keys?|fk|foreignkeys?)$/i' , $strType ):
+					$strType = "fk";
+				break;
+				default:
+				case	preg_match( '/^(keys?|k)$/i' , $strType ):
+					$strType = "nk";
+				break;
+			}
+			foreach( $aryKeyInfo AS $mixK => $mixV )
+			{
+				switch( $strType )
+				{
+					case	"pk":
+					break;
+					case	"fk":
+					break;
+					case	"uk":
+					break;
+					case	"nk":
+					break;
+				}
+			}
+		}
 	}
 }
 ?>
