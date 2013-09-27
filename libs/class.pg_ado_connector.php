@@ -1080,10 +1080,16 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		$aryCreateFields = array();
 		foreach( $aryFields AS $strFieldName => $aryFieldInfo )
 		{
+			if( isset( $aryFieldInfo["foreign_key"] ) )
+			{
+				list( $strForeignTable , $strForeignField ) = explode( "." , $aryFieldInfo["foreign_key"] );
+			}
 			$aryFieldInfo[] = "{$strFieldName} {$aryFieldInfo["type"]} " .
 				( isset( $aryFieldInfo["not_null"] ) ? " NOT NULL " : "" ) .
 				( $aryFieldInfo["default"] ? " DEFAULT " : "" ) . $aryFieldInfo["default"] .
-				( isset( $aryFieldInfo["primary_key"] ) ? " PRIMARY KEY " : "" );
+				( isset( $aryFieldInfo["primary_key"] ) ? " PRIMARY KEY " : "" ) .
+				( isset( $aryFieldInfo["unique_key"] ) ? " UNIQUE " : "" ) .
+				( isset( $aryFieldInfo["foreign_key"] ) ? " REFERENCES {$strForeignTable}( {$strForeignField} ) " : "" );
 		}
 		$aryCreateKeys = array();
 		foreach( $aryKeys AS $strType => $aryKeyInfo )
@@ -1091,32 +1097,36 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 			switch( true )
 			{
 				case	preg_match( '/^(primary\_keys?|pk|primarykeys?)$/i' , $strType ):
-					$strType = "pk";
+					$strType = "PRIMARY KEY";
 				break;
 				case	preg_match( '/^(unique\_keys?|uk|uniquekeys?)$/i' , $strType ):
-					$strType = "uk";
+					$strType = "UNIQUE";
 				break;
 				case	preg_match( '/^(foreign\_keys?|fk|foreignkeys?)$/i' , $strType ):
-					$strType = "fk";
+					$strType = "FOREIGN KEY";
 				break;
 				default:
 				case	preg_match( '/^(keys?|k)$/i' , $strType ):
-					$strType = "nk";
+					$strType = "KEY";
 				break;
 			}
-			foreach( $aryKeyInfo AS $mixK => $mixV )
+			switch( $strType )
 			{
-				switch( $strType )
-				{
-					case	"pk":
-					break;
-					case	"fk":
-					break;
-					case	"uk":
-					break;
-					case	"nk":
-					break;
-				}
+				case	"PRIMARY KEY":
+				case	"UNIQUE":
+					$aryKeys = array();
+					foreach( $aryKeyInfo AS $mixV )
+					{
+						$aryKeys[] = $mixV;
+					}
+					$aryCreateKeys[$strType] = implode( "," , $aryKeys );
+				break;
+				case	"fk":
+					$aryKeys = array();
+				break;
+				case	"nk":
+					$aryKeys = array();
+				break;
 			}
 		}
 	}

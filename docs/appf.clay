@@ -25,6 +25,11 @@
 <primary-key id="3b69ccba:14110f43c8c:-7ff9" name="PK_TB_USER_BASIC">
 <primary-key-column name="chr_usb_sha1"/>
 </primary-key>
+<index-list>
+<index id="412e690d:1415ed7c913:-7fff" name="idx_usb_first" unique="false">
+<index-column name="num_usb_first" sort="ASC"/>
+</index>
+</index-list>
 </table>
 </table-list>
 </schema>
