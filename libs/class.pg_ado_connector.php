@@ -1092,6 +1092,7 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 				( isset( $aryFieldInfo["foreign_key"] ) ? " REFERENCES {$strForeignTable}( {$strForeignField} ) " : "" );
 		}
 		$aryCreateKeys = array();
+		$aryPostSQL = array();
 		foreach( $aryKeys AS $strType => $aryKeyInfo )
 		{
 			switch( true )
@@ -1121,11 +1122,24 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 					}
 					$aryCreateKeys[$strType] = implode( "," , $aryKeys );
 				break;
-				case	"fk":
+				case	"FOREIGN_KEY":
 					$aryKeys = array();
 				break;
-				case	"nk":
+				case	"KEY":
 					$aryKeys = array();
+					$aryPostSQL = array();
+					foreach( $aryKeyInfo AS $strK => $mixV )
+					{
+						if( ! is_array( $mixV ) )
+						{
+							$aryCols[] = $mixV;
+						}else
+						{
+							$aryCols = $mixV;
+						}
+						$strCols = implode( "," , $aryCols );
+						$aryPostSQL[] = "CREATE INDEX idx_{$strTable}_" . printf( '%9d' , mt_rand( 0 , 999999999 ) ) . " ON {$strTable}( {$strCols} ) ASC";
+					}
 				break;
 			}
 		}
