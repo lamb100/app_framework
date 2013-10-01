@@ -1093,7 +1093,7 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}
 		$aryCreateKeys = array();
 		$aryPostSQL = array();
-		foreach( $aryKeys AS $strType => $aryKeyInfo )
+		foreach( $aryKeys AS $strType => $aryKeys )
 		{
 			switch( true )
 			{
@@ -1116,14 +1116,30 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 				case	"PRIMARY KEY":
 				case	"UNIQUE":
 					$aryKeys = array();
-					foreach( $aryKeyInfo AS $mixV )
+					foreach( $aryKeys AS $mixKeyInfo )
 					{
-						$aryKeys[] = $mixV;
+						if( is_array( $mixKeyInfo ) )
+						{
+							$strCreateKey = implode( "," , $mixKeyInfo );
+						}else
+						{
+							$strCreateKey = $mixKeyInfo;
+						}
+						$aryCreateKeys[] = "{$strType}( {$strCreateKey} )";
 					}
-					$aryCreateKeys[$strType] = implode( "," , $aryKeys );
 				break;
 				case	"FOREIGN_KEY":
-					$aryKeys = array();
+					foreach( $aryKeys AS $mixKeyInfo )
+					{
+						if( is_array( $mixKeyInfo ) )
+						{
+							$strCreateKey = implode( "," , $mixKeyInfo );
+						}else	if( preg_match( '/^([a-z0-9\_]+(\,[a-z0-9\_]+)*)\=([a-z0-9\_]+)\.([a-z0-9\_]+(\,[a-z0-9\_]+)*)$/i' ) )
+						{
+							$strCreateKey = $mixKeyInfo;
+						}
+						$aryCreateKeys[] = "{$strType}( {$strCreateKey} )";
+					}
 				break;
 				case	"KEY":
 					$aryKeys = array();
