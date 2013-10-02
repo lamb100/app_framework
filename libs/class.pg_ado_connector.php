@@ -913,7 +913,17 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		return	(boolean)$this->objSetExecute( $strSQL );
 	}
 
-	public	function	GetSimpleSelectSQL( $strTable , $mixFields = NULL , $mixWhere = NULL , $mixGroup = NULL , $mixHaving = NULL , $mixOrderBy = NULL )
+	/**
+	 * 取得簡易版的擷取資料的SQL指令
+	 * @param	string	$strTable	資料表名稱
+	 * @param	mixed(array|string)	$mixFields	欄位資訊
+	 * @param mixed(array|string)	$mixWhere	取得資料的條件
+	 * @param mixed(array|string)	$mixGroup	群組的欄位或定義
+	 * @param mixed(array|string)	$mixHaving	群組的條件
+	 * @param mixed(array|string)	$mixOrderBy	排序的條件及定義
+	 * @return string	SQL指令
+	 */
+	public	function	strGetSimpleSelectSQL( $strTable , $mixFields = NULL , $mixWhere = NULL , $mixGroup = NULL , $mixHaving = NULL , $mixOrderBy = NULL )
 	{
 		//取得欄位{
 		if( is_null( $mixFields ) )
@@ -1049,6 +1059,18 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 			( $strOrderBy ? " ORDER BY {$strOrderBy}" : "" ) .
 			( $strLimit ? $strLimit : "" );
 	}
+	/**
+	 * 依分頁取得擷取資料的SQL指令
+	 * @param	string	$strTable	資料表名稱
+	 * @param	integer	$intPages	取得資料的第一個頁數
+	 * @param	integer	$intNumInPage	一頁資料的筆數
+	 * @param	mixed(array|string)	$mixFields	欄位資訊
+	 * @param mixed(array|string)	$mixWhere	取得資料的條件
+	 * @param mixed(array|string)	$mixGroup	群組的欄位或定義
+	 * @param mixed(array|string)	$mixHaving	群組的條件
+	 * @param mixed(array|string)	$mixOrderBy	排序的條件及定義
+	 * @return string	SQL指令
+	 */
 	public	function	GetSimpleSelectSQLByPage( $strTable , $intPages = 1 , $intNumInPage = DEFAULT_ROWS_IN_PAGE , $mixFields = NULL , $mixWhere = NULL , $mixGroup = NULL , $mixHaving = NULL , $mixOrderBy = NULL )
 	{
 		$strSQL = $this->GetSimpleSelectSQL( $strTable , $mixFields , $mixWhere , $mixGroup , $mixHaving , $mixOrderBy );
@@ -1060,7 +1082,18 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}
 		return	$strSQL . $strLimit;
 	}
-
+	/**
+	 * 依分頁取得擷取資料的SQL指令
+	 * @param	string	$strTable	資料表名稱
+	 * @param	integer	$intStart	資料開始位置
+	 * @param	integer	$intEnd	資料結束位置
+	 * @param	mixed(array|string)	$mixFields	欄位資訊
+	 * @param mixed(array|string)	$mixWhere	取得資料的條件
+	 * @param mixed(array|string)	$mixGroup	群組的欄位或定義
+	 * @param mixed(array|string)	$mixHaving	群組的條件
+	 * @param mixed(array|string)	$mixOrderBy	排序的條件及定義
+	 * @return string	SQL指令
+	 */
 	public	function	GetSimpleSelectSQLByRange( $strTable , $intStart = 0 , $intEnd = 0 , $mixFields = NULL , $mixWhere = NULL , $mixGroup = NULL , $mixHaving = NULL , $mixOrderBy = NULL )
 	{
 		$strSQL = $this->GetSimpleSelectSQL( $strTable , $mixFields , $mixWhere , $mixGroup , $mixHaving , $mixOrderBy );
@@ -1075,6 +1108,14 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 		}
 		return	$strSQL . $strLimit;
 	}
+	/**
+	 * 取得建立資料表的SQL
+	 * @param	string	$strTable	資料表名稱
+	 * @param	array	$aryFields	欄位資訊
+	 * @param	array	$aryKeys		鍵值資訊
+	 * @param string $strOtherTableOption	其他資料表建立資訊
+	 * @return string	SQL指令
+	 */
 	public	function	GetCreateTableSQL( $strTable , $aryFields , $aryKeys , $strOtherTableOption = NULL )
 	{
 		$aryCreateFields = array();
@@ -1128,15 +1169,15 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 						$aryCreateKeys[] = "{$strType}( {$strCreateKey} )";
 					}
 				break;
-				case	"FOREIGN_KEY":
+				case	"FOREIGN KEY":
 					foreach( $aryKeys AS $mixKeyInfo )
 					{
 						if( is_array( $mixKeyInfo ) )
 						{
 							$strCreateKey = implode( "," , $mixKeyInfo );
-						}else	if( preg_match( '/^([a-z0-9\_]+(\,[a-z0-9\_]+)*)\=([a-z0-9\_]+)\.([a-z0-9\_]+(\,[a-z0-9\_]+)*)$/i' ) )
+						}else	if( preg_match( '/^([a-z0-9\_]+(\,[a-z0-9\_]+)*)\=([a-z0-9\_]+)\.([a-z0-9\_]+(\,[a-z0-9\_]+)*)$/i' , $mixKeyInfo , $aryRegs ) )
 						{
-							$strCreateKey = $mixKeyInfo;
+							$strSourceFields = "{$aryRegs[1]} REFERENCES {$aryRegs[3]}( {$aryRegs[4]} )";
 						}
 						$aryCreateKeys[] = "{$strType}( {$strCreateKey} )";
 					}
@@ -1159,6 +1200,8 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 				break;
 			}
 		}
+		$strSQL = "CREATE TABLE {$strTable} (" . implode( "," , $aryFieldInfo ) . ( $aryCreateKeys ? "," . implode( "," , $aryCreateKeys ) : "" ) . ") WITH OIDS {$strOtherTableOption};" . implode( ";" , $aryPostSQL ) . ";";
+		return	$strSQL;
 	}
 }
 ?>
