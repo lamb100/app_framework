@@ -44,7 +44,7 @@ class	UserModule	extends	Core
 	 * @param unknown $arySet
 	 * @return UserModule
 	 */
-	protected	function	&SetUserBasic( $arySet = array() )
+	protected	function	&SetUserBasic( $arySet = array() , $bolForceInsert = false )
 	{
 		$aryNow = aryGetNow();
 		if( ! isset( $arySet["vch_usb_id"] ) )
@@ -56,16 +56,19 @@ class	UserModule	extends	Core
 		$strSQL = "SELECT chr_usb_pass FROM tb_user_basic WHERE vch_usb_id = " . $this->ExecuteDB( "strGetQuote" , $arySet["vch_usb_id"] );
 		$aryRow = $this->ExecuteDB( "aryGetRow" ,  0 );
 		$bolInsert = true;
-		if( $aryRow )
+		if( ! $bolForceInsert )
 		{
-			$strPass = $aryRow["chr_usb_pass"];
-			if( $strPass != strGetCrypt( $arySet["chr_usb_pass"] , $strPass ) )
+			if( $aryRow )
 			{
-				$this->SetMsgTrace( $this->GetLang( "WRONG_PASS" ) , __FILE__ , __LINE__ );
-				$this->LastResult = false;
-				return	$this;
+				$strPass = $aryRow["chr_usb_pass"];
+				if( $strPass != strGetCrypt( $arySet["chr_usb_pass"] , $strPass ) )
+				{
+					$this->SetMsgTrace( $this->GetLang( "WRONG_PASS" ) , __FILE__ , __LINE__ );
+					$this->LastResult = false;
+					return	$this;
+				}
+				$bolInsert = false;
 			}
-			$bolInsert = false;
 		}
 		$aryNewSet["vch_usb_id"] = $this->ExecuteDB( "strGetQuote" ,  $arySet["vch_usb_id"] );
 		$aryNewSet["chr_usb_pass"] = $this->ExecuteDB( "strGetQuote" ,  strGetCrypt( $arySet["chr_usb_pass"] ) );

@@ -31,6 +31,7 @@ abstract	class	Core	extends	stdClass
 	public	$LastResult = false;
 	protected	$DB = array();
 	protected	$View = array();
+	protected	$_APPF = array();
 
 
 	/*Magic Methods*/
@@ -82,9 +83,9 @@ abstract	class	Core	extends	stdClass
 				$arySource[] = "{{$strSource}}";
 				$aryTarget[] = $strTarget;
 			}
-			$this->Cache["GetLang"][$strLangCode][serialize( $aryReplacePair )] = str_replace( $arySource , $aryTarget , $strReturn );
+			$this->Cache[__FUNCTION__][$strLangCode][serialize( $aryReplacePair )] = str_replace( $arySource , $aryTarget , $strReturn );
 		}
-		return	$this->Cache["GetLang"][$strLangCode][serialize( $aryReplacePair )];
+		return	$this->Cache[__FUNCTION__][$strLangCode][serialize( $aryReplacePair )];
 	}
 
 	/**
@@ -148,6 +149,7 @@ abstract	class	Core	extends	stdClass
 		$this->SetTimeTrace()->SetMemTrace();
 		$this->Request = $_REQUEST;
 		$this->Session = $_SESSION;
+		$this->_APPF = $GLOBALS["APPF"];
 		return	$this;
 	}
 	protected	function	&BeforeDestruct()
@@ -162,7 +164,7 @@ abstract	class	Core	extends	stdClass
 	 * 設定時間追蹤
 	 * @return Core
 	 */
-	protected	function	&SetTimeTrace()
+	public	function	&SetTimeTrace()
 	{
 		list( $fltNow , $intNow ) = explode( ' ' , microtime() );
 		if( ! isset( $this->Debug["start"]["time"]["time"] ) )
@@ -184,7 +186,7 @@ abstract	class	Core	extends	stdClass
 	 * 設定記憶體追蹤
 	 * @return Core
 	 */
-	protected	function	&SetMemTrace()
+	public	function	&SetMemTrace()
 	{
 		$intMem = memory_get_usage( true );
 		$this->Debug["mem"][] = $intMem;
@@ -260,9 +262,61 @@ abstract	class	Core	extends	stdClass
 		$aryParam = explode( '/' , $this->Request["p"] );
 		foreach( $aryParamDefine AS $intK => $strDefine )
 		{
-			$this->Request[$strDefine] = $aryParams[$intK];
+			if( preg_match( '/^\{(.+)\}$/' , $aryParams[$intK] , $aryMatches ) )
+			{
+				$this->Request[$strDefine] = json_decode( $aryMatches[1] , true );
+
+			}else
+			{
+				$this->Request[$strDefine] = $aryParams[$intK];
+			}
 		}
 		return	$this;
+	}
+
+	protected	function	GenerateURL( $strModule = NULL , $strFunction = NULL  , $strAction = NULL , $aryParams = array() , $bolAdmin = false , $aryParamDefine = array() , $bolSelfUse = true , $strProtocol = "http://" )
+	{
+		if( ! $strModule )
+		{
+			$strModule = $this->_APPF["DEFAULT_MODULE"];
+		}
+		if( ! $strFunction )
+		{
+			$strFunction = $this->_APPF["DEFAULT_FUNCTION"];
+		}
+		if( ! $strAction )
+		{
+			$strAction = $this->_APPF["DEFAULT_ACTION"];
+		}
+		if( $bolAdmin )
+		{
+			$aryReturn[] = "admin";
+		}
+		if( $aryParamDefine == array() )
+		{
+			$aryParamDefine = $this->ParamsDefine;
+		}
+		$aryReturn[] = $strModule;
+		foreach( $aryParamDefine AS $strK => $strV )
+		{
+			if( is_array( $aryParams[$strV] ) )
+			{
+				$strURLJSON = urlencode( json_encode( $aryParams[$strV] ) );
+				$aryReturn[] = "\{{$strURLJSON}\}";
+			}else
+			{
+				$strReturn[] = $aryParams[$strV];
+			}
+		}
+		$aryReturn[] = "{$strFunction}.{$strAction}";
+		$strReturn = implode( '/' , $aryReturn );
+		if( ! $bolSelfUse )
+		{
+			return	"{$strProtocol}{$_SERVER["HTTP_HOST"]}/{$strReturn}";
+		}else
+		{
+			return	"/$strReturn";
+		}
 	}
 	/**
 	 * 初始化DB
@@ -282,6 +336,11 @@ abstract	class	Core	extends	stdClass
 		}
 		return	$this;
 	}
+	/**
+	 * 執行DB物件下的方法
+	 * @throws ErrorException
+	 * @return boolean
+	 */
 	protected	function	ExecuteDB()
 	{
 		$aryParams = func_get_args();
@@ -335,13 +394,13 @@ abstract	class	Core	extends	stdClass
 	{
 		$strClass = get_class( $objObject );
 
-		if( isset( $this->Cache["get_class_methods"][$strClass] ) )
+		if( isset( $this->Cache[__FUNCTION__][$strClass] ) )
 		{
 			$aryMethod = get_class_methods( $strClass );
 			$this->Cache["get_class_methods"][$strClass] = &$aryMethod;
 		}else
 		{
-			$aryMethod = &$this->Cache["get_class_methods"][$strClass];
+			$aryMethod = &$this->Cache[__FUNCTION__][$strClass];
 		}
 		return	in_array( $strMethod , $aryMethod );
 	}

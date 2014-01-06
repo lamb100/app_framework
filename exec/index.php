@@ -42,8 +42,8 @@ if( file_exists( "{$_APPF["DIR_LIBS"]}/{$strType}/class.{$strModule}_{$strType}.
 	header("HTTP/1.0 460 No Such Module (app_framework)");
 	exit;
 }
-$strClass = "{$strModuleClassBase}" . ucfirst( strtolower( $strFunction ) );
+$strClass = "{$strModuleClassBase}" . ucfirst( $strType );
 $objProcess = new $strClass();
-$strMethod = ucfirst( $strAdmin ) . ucfirst( $strAction );
+$strMethod = ucfirst( $strAdmin ) . ucfirst( $strFunction ) . ucfirst( $strAction );
 $objProcess->Execute( $strMethod );
 ?>
