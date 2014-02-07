@@ -5,6 +5,9 @@ if( ! isset( $_APPF ) )
 }
 //The default setting
 /*Basic*/
+$_APPF["DEFAULT_MODULE"] = "index";
+$_APPF["DEFAULT_FUNCTION"] = "view";
+$_APPF["DEFAULT_ACTION"] = "index";
 $_APPF["DIR_CONF"] = dirname( __FILE__ );
 $_APPF["DIR_ROOT"] = dirname( $_APPF["DIR_CONF"] );
 $_APPF["DIR_EXEC"] = realpath( "{$_APPF["DIR_ROOT"]}/exec" );

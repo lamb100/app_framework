@@ -398,75 +398,40 @@ function	bolGetIsWin()
 {
 	return	(bool)( strtolower( substr( 0 , 3 , PHP_OS ) ) == "win" );
 }
-
-function	aryGetParams()
+/**
+ * 將駝峰式命名轉成底線式命名
+ * @param string $strInput 要轉換輸入用的字句
+ * @return string
+ */
+function	CamelCase2UnderLine( $strInput )
 {
-	if( isset( $_SERVER["SCRIPT_URL"] ) )
+	$aryExplode = explode( "_" , $strInput );
+	$aryPreimport = array();
+	foreach( $aryExplode AS $strTemp )
 	{
-		$strParams = dirname( $_SERVER["SCRIPT_URL"] );
-	}else
-	{
-		return	$_REQUEST;
+		$aryPreimport[] = ucfirst( strtolower( $strTemp ) );
 	}
-	$aryReturn = $_REQUEST;
-	$aryParams = explode( "/" , $strParams );
-	$intLen = count( $aryParams );
-	for( $intAc = 1 ; $intAc < $intLen ; $intAc++ )
-	{
-		$aryTemp = explode( ":" , $aryParams[$intAc] );
-		if( $aryTemp[1] == "b" )
-		{
-			$aryReturn[$aryTemp[0]] = true;
-			continue;
-		}
-		$strK = strtolower( $aryTemp[0] );
-		$bolIsArray = false;
-		if( $aryTemp[1] == "a" )
-		{
-			$bolIsArray = true;
-		}
-		$intAc++;
-		$aryTemp = explode( ":" , $aryParams[$intAc] );
-		if( $bolIsArray )
-		{
-			$aryReturn[$strK] = unserialize( $aryTemp[0] );
-		}else
-		{
-			$aryReturn[$strK] = $aryTemp[0];
-		}
-	}
-	foreach( $aryReturn AS $strK => $mixV )
-	{
-		$_REQUEST[$strK] = $mixV;
-	}
-	return	$aryReturn;
+	return	implode(  "" , $aryPreimport );
 }
 
-function	strGetGenURL( $aryParams )
+/**
+ * 將底線式命名轉換成駝峰式命名
+ * @param string $strInput 要轉換輸入用的字句
+ * @return string
+ */
+function	UnderLine2CamelCase( $strInput )
 {
-	$strBaseName = "{$aryParams["module"]}.{$aryParams["function"]}";
-	unset( $aryParams["module"] , $aryParams["function"] );
-	$aryReturnTemp = array();
-	foreach( $aryParams AS $strK => $mixV )
+	if( preg_match_all( '/^([A-Z0-9][a-z0-9]*)+$/' , $strInput , $aryReg ) )
 	{
-		if( $mixV === true )
+		$aryReturn = array();
+		foreach( $aryReg AS $strPreimplode )
 		{
-			$aryReturnTemp[] = "{$strK}:b";
-			continue;
+			$aryReturn[] = strtolower( $strPreimplode );
 		}
-		if( is_array( $mixV ) )
-		{
-			$aryReturnTemp[] = "{$strK}:a";
-			$aryReturnTemp[] = serialize( $mixV );
-			continue;
-		}
-		$aryReturnTemp[] = "{$strK}:" . 
-			$this->strGetBase10ToBase64( mt_rand( 0 , 63 ) ). 
-			$this->strGetBase10ToBase64( mt_rand( 0 , 63 ) );
-		$aryReturnTemp[] = "{$mixV}:" . 
-			$this->strGetBase10ToBase64( mt_rand( 0 , 63 ) ). 
-			$this->strGetBase10ToBase64( mt_rand( 0 , 63 ) );
+		return	implode( "_" , $aryReturn );
+	}else
+	{
+		return	$strInput;
 	}
-	return	"/" . implode( "/" , $aryReturnTemp ) . "/{$strBaseName}";
 }
 ?>
