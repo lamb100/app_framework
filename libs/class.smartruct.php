@@ -3,45 +3,46 @@ $strThisDir = realpath( dirname( __FILE__ ) );
 require_once( "function.php" );
 /**
  * 預計有的樣版TAG
+ * IF
  * <t:if test="條件">
  * <t:elseif test="">
  * </t:elseif>
  * <t:else>
  * </t:else>
  * </t:if>
- *
+ *SWITCH
  * <t:switch testee="受檢的項目">
  * <t:case tester="相關條件" nobreak="true|false">
  * </t:case>
  * <t:default nobreak="true|false">
  * </t:default>
  * </t:switch>
- *
+ *FOR
  * <t:for name="名稱" start="開始值" end="結束值" step="間隔值">
  * <t:break time="跳脫層數"/>
  * <t:continue time="循環層數"/>
  * </t:for>
- *
+ *FOREACH
  * <t:foreach name="名稱" from="要循環取值的陣列" key="鍵值代表陣列" item="鍵值內容值">
  * <t:break time="跳脫層數"/>
  * <t:continue time="循環層數"/>
  * <t:foreachelse>
  * </t:foreachelse>
  * </t:foreach>
- *
+ *WHILE
  * <t:while name="名稱" test="條件">
  * <t:break time="跳脫層數"/>
  * <t:continue time="循環層數"/>
  * </t:while>
- *
+ *DO(...WHILE)
  * <t:do name="名稱" test="條件">
  * <t:break time="跳脫層數"/>
  * <t:continue time="循環層數"/>
  * </t:do>
- *
+ *INCLUDE
  * <t:include file="引入樣版的檔案位置" 參數名稱="參數內容"/>
  * <t:include_php file="引入PHP程式名稱" bolOnce="是否是只引入一次"/>
- *
+ *LANGUAGE
  * <t:lang value=""/>
  * $變數名稱
  * #常數名稱
@@ -142,7 +143,6 @@ class	Smartruct
 	{
 		$aryReturn = array(
 			"me"	=>	array(
-				"module"	=>	"basic" ,
 				"class"	=>	__CLASS__
 			)
 		);

@@ -79,7 +79,6 @@ class	PGADORecordset
 	{
 		$aryReturn = array(
 			"me"	=>	array(
-				"module"	=>	"basic" ,
 				"class"	=>	__CLASS__
 			)
 		);

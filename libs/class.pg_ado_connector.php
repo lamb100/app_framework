@@ -111,7 +111,6 @@ WHERE constraint_type = 'FOREIGN KEY' AND lower('{TABLE}') IN ( tc.table_name , 
 	{
 		$aryReturn = array(
 			"me"	=>	array(
-				"module"	=>	"basic" ,
 				"class"	=>	__CLASS__
 			)
 		);
