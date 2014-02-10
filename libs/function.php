@@ -434,4 +434,82 @@ function	UnderLine2CamelCase( $strInput )
 		return	$strInput;
 	}
 }
+
+function	URLDiff()
+{
+	$strDefaultScheme = "http://";
+	$aryParams = func_get_args();
+	$strBaseDir = $aryParams[0];
+	$aryDiffs = $aryParams;
+	unset( $aryDiffs[0] , $aryParams );
+	ksort( $aryDiffs );
+	$aryBaseInfo = parse_url( $strBaseDir );
+	$aryBasePart = explode( '/' ,  $aryBaseInfo["path"] );
+	$aryReturn = array();
+	foreach( $aryDiffs AS $strDiff )
+	{
+		$aryDiffInfo = parse_url( $strDiff );
+		//先比較通訊協定是否一致；如果不一致，則直接回傳網址
+		if( isset( $aryDiffInfo["scheme"] ) )
+		{
+			if( $aryDiffInfo["scheme"] !== $aryBaseInfo["scheme"] )
+			{
+				$aryReturn[] = $strDiff;
+				continue;
+			}
+		}
+		//比較網站站點是否一致；如果不一致，則直接回傳網址
+		if( isset( $aryDiffInfo["host"] ) )
+		{
+			if( $aryDiffInfo["host"] !== $aryBaseInfo["host"] )
+			{
+				if( ! isset( $aryDiffInfo["scheme"] ) )
+				{
+					$aryReturn[] = "{$strDefaultScheme}{$strDiff}";
+					continue;
+				}
+				$aryReturn[] = $strDiff;
+				continue;
+			}
+		}
+		//比較埠號是否一致。如果不一致，則直接回傳網址
+		if( isset( $aryDiffInfo["port"] ) )
+		{
+			if( $aryDiffInfo["port"] !== $aryBaseInfo["port"] )
+			{
+				if( ! isset( $aryDiffInfo["scheme"] ) )
+				{
+					$aryReturn[] = "{$strDefaultScheme}{$strDiff}";
+					continue;
+				}
+				$aryReturn[] = $strDiff;
+				continue;
+			}
+		}
+		//處理$aryDiffInfo["path"]
+		if( $aryDiffInfo["path"] === '/' )
+		{
+			$aryReturn[] = '/';
+			continue;
+		}
+		if( ! preg_match( '/^\//i' , $aryDiffInfo["path"] ) )
+		{
+			$aryReturn[] = $strDiff;
+			continue;
+		}
+		$strDiff = urldecode( $strDiff );
+		$aryExploded = explode( '/' , $strDiff );
+		$aryImplode = array();
+		foreach( $aryExploded AS $intI => $strPart )
+		{
+			if( $strPart == $aryBasePart[$intI] )
+			{
+				continue;
+			}else
+			{
+				$aryImplode[] = '..';
+			}
+		}
+	}
+}
 ?>

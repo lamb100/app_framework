@@ -113,7 +113,7 @@ class	Smartruct
 	 */
 	protected	$aryNowDoTest = array();
 	/**
-	 * 堆疊中的陣列名稱
+	 * 樣版堆疊中的陣列名稱
 	 * @var	array
 	 */
 	protected	$aryTPLName = array();
@@ -384,6 +384,33 @@ class	Smartruct
 		fclose( $resFile );
 		$this->strPostparse = $strReturn;
 		return	$this->strPostparse;
+	}
+
+	/**
+	 * 製作麵包屑
+	 * @param	$aryData
+	 * @return	string
+	 */
+	static	public	function	strGetBreadCrumb( $aryData )
+	{
+		$strReturn = "";
+		if( ! is_array( $aryData ) )
+		{
+			$aryPreReturn = array();
+			foreach( $aryData AS $aryItem )
+			{
+				if( $aryItem["strURI"] )
+				{
+					$aryPreReturn[] = "<a href=\"{$aryItem["strURI"]}\">{$aryItem["strText"]}</a>";
+				}else
+				{
+					$aryPreReturn[] = $aryItem["strText"];
+				}
+			}
+		}
+		$strReturn = implode( "&raquo;" , $aryPreReturn );
+		return	$strReturn;
+		//RSBlues &raquo; <a href="http://www.free-css-layouts.com/bz99wxw.php?go=wxw" class="active">Home</a> &raquo;
 	}
 
 	/*Protected*/
@@ -1120,33 +1147,6 @@ class	Smartruct
 		{
 			return $strSingleContent;
 		}
-	}
-
-	/**
-	 * 製作麵包屑
-	 * @param	$aryData
-	 * @return	string
-	 */
-	static	public	function	strGetBreadCrumb( $aryData )
-	{
-		$strReturn = "";
-		if( ! is_array( $aryData ) )
-		{
-			$aryPreReturn = array();
-			foreach( $aryData AS $aryItem )
-			{
-				if( $aryItem["strURI"] )
-				{
-					$aryPreReturn[] = "<a href=\"{$aryItem["strURI"]}\">{$aryItem["strText"]}</a>";
-				}else
-				{
-					$aryPreReturn[] = $aryItem["strText"];
-				}
-			}
-		}
-		$strReturn = implode( "&raquo;" , $aryPreReturn );
-		return	$strReturn;
-		//RSBlues &raquo; <a href="http://www.free-css-layouts.com/bz99wxw.php?go=wxw" class="active">Home</a> &raquo;
 	}
 }
 ?>
