@@ -80,12 +80,33 @@ abstract	class	Core	extends	stdClass
 
 			foreach( $aryReplacePair AS $strSource => $strTarget )
 			{
-				$arySource[] = "{{$strSource}}";
+				$arySource[] = "\{{$strSource}\}";
 				$aryTarget[] = $strTarget;
 			}
 			$this->Cache[__FUNCTION__][$strLangCode][serialize( $aryReplacePair )] = str_replace( $arySource , $aryTarget , $strReturn );
 		}
 		return	$this->Cache[__FUNCTION__][$strLangCode][serialize( $aryReplacePair )];
+	}
+	/**
+	 * 取得語言初始化的陣列
+	 * @param	string	$strLangCode	語言代碼
+	 * @return	array
+	 */
+	public	function	GetLangRelpaceVars( $strLangCode )
+	{
+		if( isset( $_LANG[$strLangCode] ) )
+		{
+			$strPatterFetch = '/\{[a-z][0-9a-z\_\-]*\}/i';
+			preg_match_all( $strPatterFetch , $strLangCode , $aryRecieve );
+			foreach( $aryRecieve[1] AS $intK => $strR )
+			{
+				$aryReturn[$strR] = '';
+			}
+			return	$aryReturn;
+		}else
+		{
+			return	array();
+		}
 	}
 
 	/**
