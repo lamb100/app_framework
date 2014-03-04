@@ -32,6 +32,7 @@ abstract	class	Core	extends	stdClass
 	protected	$DB = array();
 	protected	$View = array();
 	protected	$_APPF = array();
+	protected	$lang;
 
 
 	/*Magic Methods*/
@@ -60,56 +61,6 @@ abstract	class	Core	extends	stdClass
 	public	function	__clone(){}
 
 	/**
-	 * 取得語言翻譯
-	 * @param	string	$strLangCode	語言碼
-	 * @param	array	$aryReplacePair	語言中要取代的文字
-	 * @return	string
-	 */
-	public	function	GetLang( $strLangCode , $aryReplacePair = array() )
-	{
-		if( ! isset( $this->Cache["GetLang"][$strLangCode][serialize( $aryReplacePair )] ) )
-		{
-			if( isset( $_LANG[$strLangCode] ) )
-			{
-				$strReturn = $_LANG[$strLangCode];
-				$arySource = $aryTarget = array();
-			}else
-			{
-				return	$strLangCode;
-			}
-
-			foreach( $aryReplacePair AS $strSource => $strTarget )
-			{
-				$arySource[] = "\{{$strSource}\}";
-				$aryTarget[] = $strTarget;
-			}
-			$this->Cache[__FUNCTION__][$strLangCode][serialize( $aryReplacePair )] = str_replace( $arySource , $aryTarget , $strReturn );
-		}
-		return	$this->Cache[__FUNCTION__][$strLangCode][serialize( $aryReplacePair )];
-	}
-	/**
-	 * 取得語言初始化的陣列
-	 * @param	string	$strLangCode	語言代碼
-	 * @return	array
-	 */
-	public	function	GetLangRelpaceVars( $strLangCode )
-	{
-		if( isset( $_LANG[$strLangCode] ) )
-		{
-			$strPatterFetch = '/\{[a-z][0-9a-z\_\-]*\}/i';
-			preg_match_all( $strPatterFetch , $strLangCode , $aryRecieve );
-			foreach( $aryRecieve[1] AS $intK => $strR )
-			{
-				$aryReturn[$strR] = '';
-			}
-			return	$aryReturn;
-		}else
-		{
-			return	array();
-		}
-	}
-
-	/**
 	 * 執行特定的方法
 	 * @param	string	$strMethod	要執行的方法名稱
 	 * @param	mixed	$mixParam1	第一個變數(2,3,4依序類推)
@@ -118,29 +69,6 @@ abstract	class	Core	extends	stdClass
 	public	function	Execute()
 	{
 		$strClass = get_class( $this );
-		if( preg_match( '/module$/i' , $strClass ) )
-		{
-			$this->SetMsgTrace(  $this->GetLang( "NO_USE_FOR_MODULE" ) , __FILE__ , __LINE__ );
-			throw	new	ErrorException( $this->GetLang( "NO_USE_FOR_MODULE" ) , 500 , 999 , __FILE__ , __LINE__ );
-			return	false;
-		}
-		$aryParams = func_get_args();
-		$strMethod = $aryParams[0];
-		unset( $aryParams[0] );
-		$strParams = '';
-		foreach( $aryParams AS $intK => $null )
-		{
-			$strParams .= ( $strParams ? " , " : "" ) . '$params[' . $intK . ']';
-		}
-		if( ! $this->IsMethodInTheObject( "Exec{$strMethod}" , $this ) )
-		{
-			$aryReplace["METHOD"] = $strMethod;
-			$this->SetMsgTrace( $this->GetLang( "NO_METHOD" , $aryReplace ) , __FILE__ , __LINE__ );
-			throw	new	ErrorException( $this->GetLang( "NO_METHOD" , $aryReplace ) , 500 , 999 , __FILE__ , __LINE__ );
-			return	false;
-		}
-		//return	$this->{$strMethod}();
-		$strPHP = 'return $this->Exec' . $strMethod . '( ' . $strParams . ' );';
 		eval( $strPHP );
 	}
 
@@ -161,7 +89,7 @@ abstract	class	Core	extends	stdClass
 		return	$this;
 	}
 	/**
-	 * 在完成建構前成立
+	 * 在完成建構前成立要做皂動作
 	 * @return Core
 	 */
 	protected	function	&BeforeConstruct()
@@ -173,6 +101,10 @@ abstract	class	Core	extends	stdClass
 		$this->_APPF = $GLOBALS["APPF"];
 		return	$this;
 	}
+	/**
+	 * 在完成解構前要做的動作
+	 * @return	Core
+	 */
 	protected	function	&BeforeDestruct()
 	{
 		if( $this->Debug["flag"] )
@@ -268,7 +200,15 @@ abstract	class	Core	extends	stdClass
 		ksort( $this->ParamsDefine );
 		return	$this;
 	}
-
+	/**
+	 * 重新取得新的SESSION
+	 * @return Core
+	 */
+	protected	function	&RefreshSession()
+	{
+		$this->Session = $_SESSION;
+		return	$this;
+	}
 	/**
 	 * 解譯變數(將解譯結果傳至Core::Request中)
 	 * @param	array	$aryParamDefine	變數定義陣列	Default:array()
@@ -294,7 +234,18 @@ abstract	class	Core	extends	stdClass
 		}
 		return	$this;
 	}
-
+	/**
+	 * 產生網址
+	 * @param string $strModule	模組(CLASS)名稱
+	 * @param string $strFunction	功能名稱
+	 * @param string $strAction	動作名稱
+	 * @param array $aryParams	變數
+	 * @param boolean $bolAdmin	是否是使用者專用
+	 * @param array	$aryParamDefine	變數定義
+	 * @param boolean $bolSelfUse	是否是自用的網址
+	 * @param string $strProtocol	指定通訊協定
+	 * @return string	網址
+	 */
 	protected	function	GenerateURL( $strModule = NULL , $strFunction = NULL  , $strAction = NULL , $aryParams = array() , $bolAdmin = false , $aryParamDefine = array() , $bolSelfUse = true , $strProtocol = "http://" )
 	{
 		if( ! $strModule )
@@ -336,7 +287,7 @@ abstract	class	Core	extends	stdClass
 			return	"{$strProtocol}{$_SERVER["HTTP_HOST"]}/{$strReturn}";
 		}else
 		{
-			return	"/$strReturn";
+			return	"/{$strReturn}";
 		}
 	}
 	/**
