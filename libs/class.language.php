@@ -8,6 +8,8 @@ class	Language	extends	stdClass
 	protected	$Content = array();
 	private	$LeftTerminal = '{';
 	private	$RightTerminal = '}';
+	const	DEFAULT_LANG = 'en_US';
+	const	DEFAULT_LANG_PATH = '../lang/en_US';
 	/*Magic Methods*/
 	public	function	__sleep(){}
 	public	function	__wakeup(){}

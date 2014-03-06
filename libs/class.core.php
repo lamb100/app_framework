@@ -32,7 +32,7 @@ abstract	class	Core	extends	stdClass
 	protected	$DB = array();
 	protected	$View = array();
 	protected	$_APPF = array();
-	
+	protected	$lang;
 	
 	/*Magic Methods*/
 	public	function	__sleep(){}
@@ -58,6 +58,5 @@ abstract	class	Core	extends	stdClass
 	{
 		return	__CLASS__;
 	}
-	
 }
 ?>
