@@ -26,14 +26,14 @@ class	Language	extends	stdClass
 	{
 		if( is_null( $strClass ) )
 		{
-			throw	new	ErrorException( "No such class named {$strClass}" );
+			throw	new	ErrorException( "No such class named {$strClass}" , $code , $severity , $filename , $lineno , $previous );
 			return	false;
 		}
 		$this->_APPF = &$GLOBALS["APPF"];
 		$this->Class = $strClass;
 		if( is_null( $strLanguage ) )
 		{
-			$strLanguage = $this->_APPF["LANG"]; 
+			$strLanguage = $this->_APPF["LANG"];
 		}
 		$this->Language = $strLanguage;
 		$this->BeforeConstruct();
@@ -54,6 +54,10 @@ class	Language	extends	stdClass
 	{
 		$strLangFilePath = "{$this->_APPF["PATH_LANG"]}/{$this->Language}/lang.{$this->Class}.php";
 		$this->Path = $strLangFilePath;
+		if( file_exists( $this->Path ) )
+		{
+			include( $strLangFilePath );
+		}
 		$this->Content = array_merge( $this->Content , $_LANG );
 		return	$this;
 	}
@@ -77,7 +81,7 @@ class	Language	extends	stdClass
 		{
 			return	$LangCode;
 		}
-		$Return = $this->Content[$LangCode];
+		$Return = $this->Content[$this->Class][$LangCode];
 		if( preg_match( "/{$this->LeftTerminal}[a-z][a-z0-9\\-\\_]*{$this->RightTerminal}/i" , $Return ) )
 		{
 			foreach( $Params AS $Key => $Value )
@@ -86,6 +90,55 @@ class	Language	extends	stdClass
 			}
 		}
 		return	$Return;
+	}
+	/**
+	 * 設定語言資料
+	 * @param	string	$LangCode
+	 * @param	mixed	$Value
+	 * @return	Language
+	 */
+	public	function	&SetLanguage( $LangCode , $Value )
+	{
+		$this->Content[$this->Class][$LangCode] = $Value;
+		$CodeArray[] = "<?php";
+		$CodeArray[] = "\$_LANG['{$this->Class}'] = unserialize( '" . addslashes( serialize( $this->Content[$this->Class] ) ) . "' );";
+		$CodeArray[] = "?>";
+		file_put_contents( $this->Path , implode( "\n" , $CodeArray ) );
+		return	$this->BeforeConstruct();
+	}
+	/**
+	 * 取得物件裡的子屬性
+	 * @param	$PropertyName1	屬性名稱(可輸入多個)
+	 * @throws	ErrorException
+	 * @return	boolean|unknown
+	 */
+	public	function	GetProperty()
+	{
+		$PropertieNames = func_get_args();
+		if( count( $PropertieNames ) <= 0 )
+		{
+			throw new ErrorException( "You don't request any property." , $code, $severity, $filename, $lineno, $previous);
+			return	false;
+		}elseif( count( $PropertieNames ) == 1 )
+		{
+			return	$this->{$PropertieNames[0]};
+		}
+		foreach( $PropertieNames AS $PropertyName )
+		{
+			$Return[$PropertyName] = $this->{$PropertyName};
+		}
+		return	$Return;
+	}
+	/**
+	 * 設定屬性
+	 * @param	string	$PropertyName	屬性名稱
+	 * @param	unknown	$PropertyValue	屬性值
+	 * @return	Language
+	 */
+	public	function	&SetProperty( $PropertyName , $PropertyValue )
+	{
+		$this->{$PropertyName} = $PropertyValue;
+		return	$this;
 	}
 }
 ?>

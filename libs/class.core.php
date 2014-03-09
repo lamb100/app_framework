@@ -28,12 +28,13 @@ abstract	class	Core	extends	stdClass
 	protected	$ParamsDefine = array();
 	protected	$Request = array();
 	protected	$Session = array();
+	protected	$System = array();
 	public	$LastResult = false;
 	protected	$DB = array();
 	protected	$View = array();
 	protected	$_APPF = array();
-	protected	$lang;
-	
+	protected	$Lang;
+
 	/*Magic Methods*/
 	public	function	__sleep(){}
 	public	function	__wakeup(){}
@@ -57,6 +58,177 @@ abstract	class	Core	extends	stdClass
 	public	function	__toString()
 	{
 		return	__CLASS__;
+	}
+
+	protected	function	&BeforeConstruct()
+	{
+
+		$this->Lang = new Language( __CLASS__ );
+		$this->_APPF = $GLOBALS["_APPF"];
+		$this->Session = $_SESSION;
+		$this->System = $_SERVER;
+		$this->Request = $_REQUEST;
+		return	$this;
+	}
+
+
+	/**
+	 * 設定時間追蹤
+	 * @return Core
+	 */
+	public	function	&SetTimeTrace()
+	{
+		list( $fltNow , $intNow ) = explode( ' ' , microtime() );
+		if( ! isset( $this->Debug["start"]["time"]["time"] ) )
+		{
+			$this->Debug["start"]["time"] = array(
+					"microtime" => $fltNow ,
+					"time"	=>	$intNow  ,
+			);
+		}
+		$this->Debug["last"]["time"] = array(
+				"microtime" => $fltNow ,
+				"time"	=>	$intNow  ,
+		);
+		$this->Debug["timestamp"][] = $this->Debug["last"]["time"] ;
+		return	$this;
+	}
+
+	/**
+	 * 設定記憶體追蹤
+	 * @return Core
+	 */
+	public	function	&SetMemTrace()
+	{
+		$intMem = memory_get_usage( true );
+		$this->Debug["mem"][] = $intMem;
+		$this->Debug["last"]["mem"] = $intMem;
+		if( ! $this->Debug["start"]["mem"] )
+		{
+			$this->Debug["start"]["mem"] = $intMem;
+		}
+		return	$this;
+	}
+
+	/**
+	 * 設定SQL指令的追蹤
+	 * @param	string	$strSQL	SQL指令
+	 * @param string	$strFile	執行SQL時所在的檔案(建議使用__FILE__)
+	 * @param	integer	$intLine	執行SQL時，記錄所在的行數(建議使用__LINE__)
+	 * @return Core
+	 */
+	protected	function	&SetSQLTrace( $strSQL , $strFile , $intLine )
+	{
+		$strThisTime = microtime();
+		$this->Debug["last"]["sql"] = $strSQL;
+		$this->Debug["sql"][$strFile][$intLine][$strThisTime] = $strSQL;
+
+		return	$this;
+	}
+	/**
+	 * 設定信息的追蹤
+	 * @param	string	$strMsg	信息內容
+	 * @param string	$strFile	留下信息時所在的檔案(建議使用__FILE__)
+	 * @param	integer	$intLine	留下信息時所在的行數(建議使用__LINE__)
+	 * @return Core
+	 */
+	protected	function	&SetMsgTrace( $strMsg , $strFile , $intLine )
+	{
+		$strThisTime = microtime();
+		$this->Debug["last"]["msg"] = $strMsg;
+		$this->Debug["msg"][$strFile][$intLine][$strThisTime] = $strMsg;
+
+		return	$this;
+	}
+
+	/**
+	 * 定義變數引入的位置所代表的變數意義
+	 * @param	string	$strDefine	定義的變數名稱
+	 * @param	integer	$intIndex	變數所在的順序	Default:-1
+	 * @return Core
+	 */
+	protected	function	&SetParamDefine( $strDefine , $intIndex = -1 )
+	{
+		if( (int)$intIndex > -1 )
+		{
+			$this->ParamsDefine[$intIndex - 0.5] = $strDefine;
+		}else
+		{
+			$this->ParamsDefine[] = $strDefine;
+		}
+		ksort( $this->ParamsDefine );
+		return	$this;
+	}
+
+	/**
+	 * 解譯變數(將解譯結果傳至Core::Request中)
+	 * @param	array	$aryParamDefine	變數定義陣列	Default:array()
+	 * @return Core
+	 */
+	protected	function	&ParseParam( $aryParamDefine = array() )
+	{
+		if( ! is_array( $aryParamDefine ) || count( $aryParamDefine ) <= 0 )
+		{
+			$aryParamDefine = $this->ParamsDefine;
+		}
+		$aryParam = explode( '/' , $this->Request["p"] );
+		foreach( $aryParamDefine AS $intK => $strDefine )
+		{
+			if( preg_match( '/^\{(.+)\}$/' , $aryParams[$intK] , $aryMatches ) )
+			{
+				$this->Request[$strDefine] = json_decode( $aryMatches[1] , true );
+
+			}else
+			{
+				$this->Request[$strDefine] = $aryParams[$intK];
+			}
+		}
+		return	$this;
+	}
+
+	protected	function	GenerateURL( $strModule = NULL , $strFunction = NULL  , $strAction = NULL , $aryParams = array() , $bolAdmin = false , $aryParamDefine = array() , $bolSelfUse = true , $strProtocol = "http://" )
+	{
+		if( ! $strModule )
+		{
+			$strModule = $this->_APPF["DEFAULT_MODULE"];
+		}
+		if( ! $strFunction )
+		{
+			$strFunction = $this->_APPF["DEFAULT_FUNCTION"];
+		}
+		if( ! $strAction )
+		{
+			$strAction = $this->_APPF["DEFAULT_ACTION"];
+		}
+		if( $bolAdmin )
+		{
+			$aryReturn[] = "admin";
+		}
+		if( $aryParamDefine == array() )
+		{
+			$aryParamDefine = $this->ParamsDefine;
+		}
+		$aryReturn[] = $strModule;
+		foreach( $aryParamDefine AS $strK => $strV )
+		{
+			if( is_array( $aryParams[$strV] ) )
+			{
+				$strURLJSON = urlencode( json_encode( $aryParams[$strV] ) );
+				$aryReturn[] = "\{{$strURLJSON}\}";
+			}else
+			{
+				$strReturn[] = $aryParams[$strV];
+			}
+		}
+		$aryReturn[] = "{$strFunction}.{$strAction}";
+		$strReturn = implode( '/' , $aryReturn );
+		if( ! $bolSelfUse )
+		{
+			return	"{$strProtocol}{$_SERVER["HTTP_HOST"]}/{$strReturn}";
+		}else
+		{
+		return	"/$strReturn";
+		}
 	}
 }
 ?>
