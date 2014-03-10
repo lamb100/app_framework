@@ -295,7 +295,7 @@ abstract	class	Core	extends	stdClass
 			include( $class_file );
 		}else
 		{
-			$this->SetMsgTrace( $this->Lang->GetLanguage( "NO_CLASS_FILE" ) , $strFile, $intLine)
+			$this->SetMsgTrace( $this->Lang->GetLanguage( "NO_CLASS_FILE" ) , $strFile, $intLine);
 		}
 		#a:admin or not/m:module/f:function/x:action/p:params
 		#RewriteRule	^\/((debug)\/)?((admin)\/)?([a-z][_0-9a-z]+)\/(.+)\/([a-z][_0-9a-z]+)\.(view|do|ajax|jsp|csp)$	/index.php?a=$4&m=$5&f=$8&x=$7&p=$6&d=$1	[L,NC,PT,QSA]
