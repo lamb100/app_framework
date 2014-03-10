@@ -68,10 +68,34 @@ abstract	class	Core	extends	stdClass
 		$this->Session = $_SESSION;
 		$this->System = $_SERVER;
 		$this->Request = $_REQUEST;
+		$this->SetMemTrace()->SetTimeTrace();
 		return	$this;
 	}
 
-
+	protected	function	&BeforeDestruct()
+	{
+		if( $this->Debug["flag"] )
+		{
+			echo '<pre>' . print_r( $this->Debug , true ) . '</pre>';
+		}
+		return	$this;
+	}
+	/**
+	 * 開啟/關閉 debuger
+	 * @param string $flag 開啟或關閉的旗標;若無指定,則預設是修改前次設定的值;預設是關閉的
+	 * @return Core
+	 */
+	public	function	&TurnOnDebug( $flag = NULL )
+	{
+		if( is_null( $flag ) )
+		{
+			$this->Debug["flag"] = ! $this->Debug["flag"];
+		}else
+		{
+			$this->Debug["flag"] = (boolean)$flag;
+		}
+		return $this;
+	}
 	/**
 	 * 設定時間追蹤
 	 * @return Core
@@ -186,7 +210,20 @@ abstract	class	Core	extends	stdClass
 		return	$this;
 	}
 
-	protected	function	GenerateURL( $strModule = NULL , $strFunction = NULL  , $strAction = NULL , $aryParams = array() , $bolAdmin = false , $aryParamDefine = array() , $bolSelfUse = true , $strProtocol = "http://" )
+	/**
+	 * 生成Framwork所需要的URL
+	 * @param string $strModule 模組名稱
+	 * @param string $strFunction 功能名稱
+	 * @param string $strAction 行為名稱
+	 * @param array $aryParams 變數內容
+	 * @param boolean $bolAdmin 是否為管理者界面
+	 * @param boolean $debug_mode 是否開啟除錯模式
+	 * @param array $aryParamDefine	是否帶入自定義的變數定義
+	 * @param string $bolSelfUse 是否是給自已使用的變數
+	 * @param string $strProtocol 通訊協定
+	 * @return string
+	 */
+	protected	function	GenerateURL( $strModule = NULL , $strFunction = NULL  , $strAction = NULL , $aryParams = array() , $bolAdmin = false , $debug_mode = false , $aryParamDefine = array() , $bolSelfUse = true , $strProtocol = "http://" )
 	{
 		if( ! $strModule )
 		{
@@ -199,6 +236,10 @@ abstract	class	Core	extends	stdClass
 		if( ! $strAction )
 		{
 			$strAction = $this->_APPF["DEFAULT_ACTION"];
+		}
+		if( $debug_mode )
+		{
+			$aryReturn[] = "debug";
 		}
 		if( $bolAdmin )
 		{
@@ -229,6 +270,35 @@ abstract	class	Core	extends	stdClass
 		{
 		return	"/$strReturn";
 		}
+	}
+
+	public	function	Process()
+	{
+		$debug = (bool)ucfirst( strtolower( str_replace( "/" , "" , $_GET["d"] ) ) );
+		$admin = (bool)ucfirst( strtolower( str_replace( "/" , "" , $_GET["a"] ) ) );
+		$class = ucfirst( strtolower( $_GET["m"] ) );
+		$class_file = "{$this->_APPF["LIB_DIR"]}/class." . strtolower( $_GET["m"] ) . ".php";
+		$function = ucfirst( strtolower( $_GET["f"] ) );
+		$action = ucfirst( strtolower( $_GET["x"] ) );
+		if( $debug )
+		{
+			$this->TurnOnDebug( true );
+		}else
+		{
+			$this->TurnOnDebug( false );
+		}
+		$admin = ( $admin ? "Admin" : "" );
+		$this->ParseParam();
+		$strMethod = "Process{$admin}{$action}{$function}";
+		if( file_exists( $class_file ) )
+		{
+			include( $class_file );
+		}else
+		{
+			$this->SetMsgTrace( $this->Lang->GetLanguage( "NO_CLASS_FILE" ) , $strFile, $intLine)
+		}
+		#a:admin or not/m:module/f:function/x:action/p:params
+		#RewriteRule	^\/((debug)\/)?((admin)\/)?([a-z][_0-9a-z]+)\/(.+)\/([a-z][_0-9a-z]+)\.(view|do|ajax|jsp|csp)$	/index.php?a=$4&m=$5&f=$8&x=$7&p=$6&d=$1	[L,NC,PT,QSA]
 	}
 }
 ?>

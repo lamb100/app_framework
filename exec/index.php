@@ -6,8 +6,8 @@ include( "{$_APPF["DIR_LIBS"]}/class.smartruct.php" );
 include( "{$_APPF["DIR_LIBS"]}/function.php" );
 include( "{$_APPF["DIR_LIBS"]}/class.core.php" );
 
-#a:admin or not/m:module/f:function/x:action/p:params
-#RewriteRule	^\/(admin\/)?([a-z][_0-9a-z]+)\/(.+)\/([a-z][_0-9a-z]+)\.(view|act|ajax|jsp|csp)$	/index.php?a=$1&m=$2&f=$5&x=$4&p=$3	[L,NC,PT,QSA]
+#a:admin or not/m:module/f:function/x:action/p:params/d:debug mode
+#RewriteRule	^\/((debug)\/)?((admin)\/)?([a-z][_0-9a-z]+)\/(.+)\/([a-z][_0-9a-z]+)\.(view|do|ajax|jsp|csp)$	/index.php?a=$4&m=$5&f=$8&x=$7&p=$6	[L,NC,PT,QSA]
 $strAdmin = strtolower( $_GET["a"] );
 $strModule = strtolower( $_GET["m"] );
 $strFunction = strtolower( $_GET["f"] );
